@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  fullname       String
+  email          String    @unique
+  password       String
+  role           String    @default("customer")
+  resetOtp       String?
+  resetOtpExpiry DateTime?
+  
+  avatar         String?   
+  username       String?   @unique 
+  isUsernameSet  Boolean   @default(false)
+  
+  phone           String?
+  isPhoneVerified Boolean  @default(false)
+  
+  // PHASE 3 ADDITIONS
+  addresses       Address[]
+  paymentMethods  PaymentMethod[]
+  orders          Order[]
+  reviews         Review[] 
+  
+  createdAt      DateTime  @default(now())
+}
+
+model Address {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  street       String
+  barangay     String
+  city         String
+  province     String
+  region       String
+  zip          String
+  isDefault    Boolean  @default(false)
+  orders       Order[]  // Relate to orders
+}
+
+model PaymentMethod {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "GCash"
+  isDefault Boolean  @default(false)
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  category    String
+  description String
+  price       Float
+  price30ml   Float?
+  price3ml    Float?
+  stock       Int
+  
+  orderItems  OrderItem[]
+  reviews     Review[]    
+
+  createdAt   DateTime    @default(now())
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  order_number   String      @unique
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id])
+  total_amount   Float
+  payment_method String
+  status         String      @default("Pending")
+  
+  // PHASE 3 ADDITIONS
+  shippingAddressId Int
+  shippingAddress   Address     @relation(fields: [shippingAddressId], references: [id])
+  
+  items          OrderItem[]
+  createdAt      DateTime    @default(now())
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  price     Float
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+}
