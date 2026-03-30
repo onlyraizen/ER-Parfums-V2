@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  fullname       String
+  email          String   @unique
+  password       String
+  role           String   @default("customer")
+  resetOtp       String?
+  resetOtpExpiry DateTime?
+  
+  avatar         String?   
+  username       String?  @unique 
+  isUsernameSet  Boolean  @default(false)
+  
+  addresses      Address[]
+  paymentMethods PaymentMethod[]
+  orders         Order[]
+  reviews        Review[] 
+  
+  // PHASE 3 ADDITIONS
+  wishlist       Wishlist[]
+  stockAlerts    StockAlert[]
+  
+  createdAt      DateTime @default(now())
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  street    String
+  barangay  String
+  city      String
+  province  String
+  region    String
+  zip       String
+  isDefault Boolean  @default(false)
+  orders    Order[]  
+}
+
+model PaymentMethod {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // "GCash"
+  isDefault Boolean  @default(false)
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String
+  description String
+  price       Float
+  price30ml   Float?
+  price3ml    Float?
+  stock       Int
+  
+  // LUXURY UPGRADES (PHASE 1)
+  scentFamily String?
+  topNotes    String?
+  heartNotes  String?
+  baseNotes   String?
+  imageUrl    String?    // Main catalog image
+  images      String[]   @default([]) // Image gallery
+  tags        String[]   @default([])
+  
+  orderItems  OrderItem[]
+  reviews     Review[]    
+  wishlist    Wishlist[]
+  stockAlerts StockAlert[]
+
+  createdAt   DateTime   @default(now())
+}
+
+model Order {
+  id               Int      @id @default(autoincrement())
+  order_number     String   @unique
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id])
+  total_amount     Float
+  payment_method   String
+  status           String   @default("Pending")
+  
+  shippingAddressId Int
+  shippingAddress   Address  @relation(fields: [shippingAddressId], references: [id])
+  
+  items            OrderItem[]
+  statusHistory    OrderStatusHistory[]
+  
+  couponId         Int?
+  coupon           Coupon?  @relation(fields: [couponId], references: [id])
+
+  createdAt        DateTime @default(now())
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  price     Float
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// --- NEW ARCHITECTURE MODELS ---
+
+model OrderStatusHistory {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId]) // Prevent users from saving the same item twice
+}
+
+model StockAlert {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  isNotified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Coupon {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  discountType  String   // "PERCENTAGE" or "FIXED"
+  discountValue Float
+  isActive      Boolean  @default(true)
+  orders        Order[]
+  createdAt     DateTime @default(now())
+}
