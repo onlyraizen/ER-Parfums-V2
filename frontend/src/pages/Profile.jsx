@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReviewModal from '../components/ReviewModal';
 
 // Icons
 const UserIcon = () => (<svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>);
@@ -12,6 +13,7 @@ const PlusIcon = () => (<svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} s
 
 export default function Profile() {
     const navigate = useNavigate();
+    const location = useLocation();
     const token = localStorage.getItem('token');
     
     const [user, setUser] = useState(null);
@@ -23,35 +25,51 @@ export default function Profile() {
     const [formData, setFormData] = useState({ username: '', fullname: '', newPassword: '' });
     const fileInputRef = useRef(null);
 
-    // --- SAVED DATA (PHASE 3) ---
     const [savedAddresses, setSavedAddresses] = useState([]);
-    const [savedPayments, setSavedPayments] = useState([]);
     const [isAddressModalOpen, setAddressModalOpen] = useState(false);
-    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
     const [addressForm, setAddressForm] = useState({ street: '', barangay: '', city: '', region: '', province: '', zip: '', isDefault: false });
-    const [paymentForm, setPaymentForm] = useState({ type: '', isDefault: false });
+    
+    const [reviewingProduct, setReviewingProduct] = useState(null); 
 
-    // Fetch User Profile
+    // --- NEW: RETURN REQUEST STATE ---
+    const [returnModal, setReturnModal] = useState({ isOpen: false, orderNumber: '' });
+    const [returnForm, setReturnForm] = useState({ reason: '', details: '' });
+
     useEffect(() => {
         if (!token) { navigate('/'); return; }
-        const fetchProfileData = async () => {
-            try {
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                const userRes = await axios.get('http://localhost:5000/api/users/me', config);
-                setUser(userRes.data.data);
-                setFormData({ username: userRes.data.data.username || '', fullname: userRes.data.data.fullname, newPassword: '' });
-                const orderRes = await axios.get('http://localhost:5000/api/orders/my-orders', config);
-                setOrders(orderRes.data.data);
-            } catch (error) { navigate('/'); }
-        };
         fetchProfileData();
-    }, [token, navigate]);
+        fetchAddresses();
 
-    // Handle standard profile updates
+        const searchParams = new URLSearchParams(location.search);
+        const urlTab = searchParams.get('tab');
+        if (urlTab) {
+            setActiveTab(urlTab);
+        }
+    }, [token, navigate, location]);
+
+    const fetchProfileData = async () => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const userRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/me`, config);
+            setUser(userRes.data.data);
+            setFormData({ username: userRes.data.data.username || '', fullname: userRes.data.data.fullname, newPassword: '' });
+            const orderRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/orders/my-orders`, config);
+            setOrders(orderRes.data.data);
+        } catch (error) { navigate('/'); }
+    };
+
+    const fetchAddresses = async () => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/addresses`, config);
+            setSavedAddresses(res.data.data);
+        } catch (error) { console.error("Could not fetch addresses."); }
+    };
+
     const handleProfileUpdate = async (e) => { 
         e.preventDefault(); 
         try { 
-            const res = await axios.put('http://localhost:5000/api/users/profile', formData, { headers: { Authorization: `Bearer ${token}` } }); 
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/profile`, formData, { headers: { Authorization: `Bearer ${token}` } }); 
             setUser(res.data.user); 
             setFormData(prev => ({ ...prev, newPassword: '' })); 
             alert("Profile updated successfully!"); 
@@ -63,40 +81,60 @@ export default function Profile() {
         if (!file || file.size > 1024 * 1024) return alert("Upload Failed: File exceeds 1MB limit."); 
         const fd = new FormData(); fd.append('avatar', file); 
         try { 
-            const res = await axios.post('http://localhost:5000/api/users/avatar', fd, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }); 
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/avatar`, fd, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }); 
             setUser(prev => ({ ...prev, avatar: res.data.avatarUrl })); 
         } catch (error) { alert("Upload failed: " + error.response?.data?.message); } 
     };
 
-    // --- PHASE 3: ADDRESS LOGIC ---
     const handleAddAddress = async (e) => { 
         e.preventDefault(); 
-        const newAddress = { ...addressForm, id: Date.now() }; 
-        if (newAddress.isDefault) { setSavedAddresses(prev => prev.map(addr => ({ ...addr, isDefault: false }))); } 
-        setSavedAddresses(prev => [...prev, newAddress]); 
-        alert("Address added to your profile!"); 
-        setAddressModalOpen(false); 
-        setAddressForm({ street: '', barangay: '', city: '', region: '', province: '', zip: '', isDefault: false }); 
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/users/addresses`, addressForm, { headers: { Authorization: `Bearer ${token}` } });
+            alert("Address securely saved."); 
+            setAddressModalOpen(false); 
+            setAddressForm({ street: '', barangay: '', city: '', region: '', province: '', zip: '', isDefault: false }); 
+            fetchAddresses(); 
+        } catch (error) { alert("Failed to save address."); }
     };
 
-    // --- PHASE 3: PAYMENT LOGIC ---
-    const handleAddPayment = async (e) => { 
-        e.preventDefault(); 
-        if (paymentForm.type !== 'GCash') { alert("This payment method is currently disabled."); return; } 
-        const newPayment = { ...paymentForm, id: Date.now() }; 
-        if (newPayment.isDefault) { setSavedPayments(prev => prev.map(pay => ({ ...pay, isDefault: false }))); } 
-        setSavedPayments(prev => [...prev, newPayment]); 
-        alert("GCash method saved!"); 
-        setPaymentModalOpen(false); 
-        setPaymentForm({ type: '', isDefault: false }); 
+    const handleDeleteAddress = async (id) => {
+        if(!window.confirm("Are you sure you want to remove this address?")) return;
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/users/addresses/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+            fetchAddresses();
+        } catch (error) { alert("Failed to delete address."); }
+    };
+
+    const handleReviewSuccess = () => {
+        setReviewingProduct(null); 
+        fetchProfileData(); 
+    };
+
+    // --- NEW: RETURN REQUEST LOGIC ---
+    const handleRequestReturn = (orderNumber) => {
+        setReturnModal({ isOpen: true, orderNumber });
+    };
+
+    const handleSubmitReturn = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/orders/${returnModal.orderNumber}/return`, returnForm, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert(`Return request for Order ${returnModal.orderNumber} submitted successfully. Please check your email for the next steps regarding the unboxing video.`);
+            setReturnModal({ isOpen: false, orderNumber: '' });
+            setReturnForm({ reason: '', details: '' });
+            fetchProfileData(); // Instantly update the UI to show the order moved to Return/Refund tab
+        } catch (error) {
+            alert(error.response?.data?.message || "Failed to submit return request.");
+        }
     };
 
     if (!user) return <div className="min-h-screen flex items-center justify-center text-[10px] uppercase font-bold tracking-widest">Loading...</div>;
 
-    const orderTabs = ['ALL', 'TO PAY', 'TO SHIP', 'TO RECEIVE', 'COMPLETED', 'CANCELLED', 'RETURN/REFUND'];
+    const orderTabs = ['ALL', 'PENDING', 'TO SHIP', 'TO RECEIVE', 'COMPLETED', 'CANCELLED', 'RETURN/REFUND'];
     const filteredOrders = orders.filter(o => {
         if (activeOrderTab === 'ALL') return true;
-        if (activeOrderTab === 'TO PAY') return o.status === 'Pending';
         if (activeOrderTab === 'TO SHIP') return o.status === 'Processing';
         if (activeOrderTab === 'TO RECEIVE') return o.status === 'Shipped';
         return o.status.toUpperCase() === activeOrderTab;
@@ -105,12 +143,22 @@ export default function Profile() {
     const fastTransition = { type: 'tween', duration: 0.25, ease: "easeOut" };
 
     return (
-        <div className="min-h-screen bg-gray-50 pt-32 pb-20 font-sans">
-            <div className="max-w-[1200px] mx-auto px-10 flex flex-col md:flex-row gap-10">
+        <div className="min-h-screen bg-gray-50 pt-32 pb-20 font-sans relative">
+            
+            {reviewingProduct && (
+                <ReviewModal 
+                    productId={reviewingProduct.id} 
+                    productName={reviewingProduct.name} 
+                    onClose={() => setReviewingProduct(null)} 
+                    onSuccess={handleReviewSuccess}
+                />
+            )}
+
+            <div className="max-w-[1200px] mx-auto px-10 flex flex-col md:flex-row gap-10 relative">
                 
                 {/* --- SIDEBAR UI --- */}
-                <div className="w-full md:w-64 shrink-0 pr-6 border-r border-gray-200">
-                    <div className="flex items-center gap-4 mb-10">
+                <div className="w-full md:w-64 shrink-0 pr-6 md:border-r md:border-gray-200">
+                    <div className="flex items-center gap-4 mb-10 p-4 border border-gray-100 bg-white md:border-none md:bg-transparent md:p-0">
                         <div className="w-14 h-14 rounded-full bg-[#E5E7EB] flex items-center justify-center text-xl font-bold text-gray-600 overflow-hidden border border-gray-300 shadow-sm">
                             {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover"/> : <span className="font-bold text-gray-600">{user.fullname[0]}</span>}
                         </div>
@@ -122,74 +170,69 @@ export default function Profile() {
                         </div>
                     </div>
                     
-                    <nav className="space-y-6 text-sm">
-                        <div>
-                            <div className="flex items-center gap-3 font-bold text-black mb-4"><UserIcon/> My Account</div>
-                            <div className="flex flex-col ml-8 space-y-3 text-gray-500">
+                    <nav className="flex flex-row md:flex-col gap-4 md:gap-0 md:space-y-6 overflow-x-auto pb-4 md:pb-0 md:overflow-visible scrollbar-hide text-sm">
+                        <div className="flex-none md:flex-initial">
+                            <div className="flex items-center gap-3 font-bold text-black mb-4 hidden md:flex"><UserIcon/> My Account</div>
+                            <div className="flex flex-row md:flex-col md:ml-8 gap-4 md:gap-0 md:space-y-3 text-gray-500 whitespace-nowrap">
                                 <button onClick={()=>setActiveTab('Profile')} className={`text-left transition ${activeTab==='Profile'?'text-black font-bold':''}`}>Profile</button>
                                 <button onClick={()=>setActiveTab('Addresses')} className={`text-left transition ${activeTab==='Addresses'?'text-black font-bold':''}`}>Addresses</button>
-                                <button onClick={()=>setActiveTab('Payment')} className={`text-left transition ${activeTab==='Payment'?'text-black font-bold':''}`}>Payment Methods</button>
                             </div>
                         </div>
-                        <button onClick={()=>setActiveTab('My Purchase')} className={`flex items-center gap-3 font-bold transition w-full text-left ${activeTab==='My Purchase'?'text-black':'text-gray-500 hover:text-black'}`}>
+                        <button onClick={()=>setActiveTab('My Purchase')} className={`flex flex-none md:flex-initial items-center gap-3 font-bold transition w-auto md:w-full text-left whitespace-nowrap ${activeTab==='My Purchase'?'text-black':'text-gray-500 hover:text-black'}`}>
                             <ClipboardIcon/> My Purchase
                         </button>
                     </nav>
                 </div>
 
                 {/* --- MAIN CONTENT --- */}
-                <div className="flex-1 bg-white shadow-sm border border-gray-200 p-10 min-h-[600px]">
+                <div className="flex-1 bg-white shadow-sm border border-gray-200 p-8 md:p-10 min-h-[600px]">
                     
                     {/* PROFILE TAB */}
                     {activeTab === 'Profile' && (
                         <div className="animate-fade-in space-y-8">
                             <div className="border-b border-gray-100 pb-6 mb-8"><h2 className="text-xl font-bold">My Profile</h2><p className="text-xs text-gray-500 mt-1">Manage and protect your account</p></div>
                             
-                            <div className="flex flex-col md:flex-row gap-12">
+                            <div className="flex flex-col lg:flex-row gap-12">
                                 <form onSubmit={handleProfileUpdate} className="flex-1 space-y-8">
-                                    <div className="flex items-center">
-                                        <label className="w-1/4 text-right pr-6 text-sm text-gray-500">Username</label>
-                                        <div className="w-3/4">
+                                    <div className="flex flex-col md:flex-row md:items-center">
+                                        <label className="md:w-1/4 text-left md:text-right pr-6 text-sm text-gray-500 mb-2 md:mb-0">Username</label>
+                                        <div className="md:w-3/4">
                                             <input type="text" value={formData.username} onChange={(e)=>setFormData({...formData, username: e.target.value})} disabled={user.isUsernameSet} className={`w-full border border-gray-300 p-2.5 text-sm outline-none focus:border-black transition ${user.isUsernameSet?'bg-gray-50 text-gray-400':''}`} />
                                             <p className="text-[10px] text-gray-400 mt-2">Username can only be changed once.</p>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center">
-                                        <label className="w-1/4 text-right pr-6 text-sm text-gray-500">Name</label>
-                                        <div className="w-3/4">
+                                    <div className="flex flex-col md:flex-row md:items-center">
+                                        <label className="md:w-1/4 text-left md:text-right pr-6 text-sm text-gray-500 mb-2 md:mb-0">Name</label>
+                                        <div className="md:w-3/4">
                                             <input type="text" value={formData.fullname} onChange={(e)=>setFormData({...formData, fullname: e.target.value})} required className="w-full border border-gray-300 p-2.5 text-sm outline-none focus:border-black transition" />
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center">
-                                        <label className="w-1/4 text-right pr-6 text-sm text-gray-500">Email</label>
-                                        <div className="w-3/4 flex gap-4 items-center">
-                                            <span className="text-sm font-bold text-gray-500">{user.email}</span>
-                                        </div>
+                                    <div className="flex flex-col md:flex-row md:items-center">
+                                        <label className="md:w-1/4 text-left md:text-right pr-6 text-sm text-gray-500 mb-1 md:mb-0">Email</label>
+                                        <div className="md:w-3/4 text-sm font-bold text-gray-500">{user.email}</div>
                                     </div>
                                     
-                                    <div className="flex items-center">
-                                        <label className="w-1/4 text-right pr-6 text-sm text-gray-500">Phone</label>
-                                        <div className="w-3/4 flex gap-4 items-center">
-                                            <span className="text-sm text-gray-500">{user.phone || 'Updated during checkout'}</span>
-                                        </div>
+                                    <div className="flex flex-col md:flex-row md:items-center">
+                                        <label className="md:w-1/4 text-left md:text-right pr-6 text-sm text-gray-500 mb-1 md:mb-0">Phone</label>
+                                        <div className="md:w-3/4 text-sm text-gray-500">{user.phone || 'Updated during checkout'}</div>
                                     </div>
                                     
-                                    <div className="flex items-center">
-                                        <label className="w-1/4 text-right pr-6 text-sm text-gray-500">New Password</label>
-                                        <div className="w-3/4">
+                                    <div className="flex flex-col md:flex-row md:items-center">
+                                        <label className="md:w-1/4 text-left md:text-right pr-6 text-sm text-gray-500 mb-2 md:mb-0">New Password</label>
+                                        <div className="md:w-3/4">
                                             <input type="password" value={formData.newPassword} onChange={(e)=>setFormData({...formData, newPassword: e.target.value})} placeholder="Leave blank to keep current password" className="w-full border border-gray-300 p-2.5 text-sm placeholder:text-gray-400 outline-none focus:border-black transition" />
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center">
-                                        <div className="w-1/4"></div>
-                                        <div className="w-3/4"><button type="submit" className="bg-black text-white px-10 py-3.5 text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition shadow-sm cursor-pointer">SAVE</button></div>
+                                    <div className="flex flex-col md:flex-row md:items-center">
+                                        <div className="md:w-1/4"></div>
+                                        <div className="md:w-3/4"><button type="submit" className="bg-black text-white px-10 py-3.5 text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition shadow-sm cursor-pointer w-full md:w-auto">SAVE</button></div>
                                     </div>
                                 </form>
 
-                                <div className="w-full md:w-1/3 flex flex-col items-center justify-center border-l border-gray-100 pl-12">
+                                <div className="w-full lg:w-1/3 flex flex-col items-center justify-center lg:border-l lg:border-gray-100 lg:pl-12 py-10 border-t border-gray-100 lg:border-t-0 mt-8 lg:mt-0">
                                     <div className="w-28 h-28 rounded-full bg-gray-50 flex items-center justify-center border-2 border-gray-200 mb-6 overflow-hidden">
                                         {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover"/> : <span className="text-5xl text-gray-300 font-bold">{user.fullname[0]}</span>}
                                     </div>
@@ -204,10 +247,10 @@ export default function Profile() {
                     {/* ADDRESSES TAB */}
                     {activeTab === 'Addresses' && (
                         <div className="animate-fade-in">
-                            <div className="flex justify-between items-center border-b border-gray-100 pb-6 mb-8">
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-6 mb-8 gap-4">
                                 <h2 className="text-xl font-bold text-black mb-1">My Addresses</h2>
-                                <button onClick={() => setAddressModalOpen(true)} className="bg-black text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-800 transition shadow-md cursor-pointer">
-                                    <PlusIcon /> Add New Address
+                                <button onClick={() => setAddressModalOpen(true)} className="bg-black text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-800 transition shadow-md cursor-pointer whitespace-nowrap">
+                                    <PlusIcon /> Add New
                                 </button>
                             </div>
                             {savedAddresses.length === 0 ? (
@@ -215,40 +258,13 @@ export default function Profile() {
                             ) : (
                                 <div className="space-y-6">
                                     {savedAddresses.map(addr => (
-                                        <div key={addr.id} className="border border-gray-200 p-6 flex justify-between items-start">
+                                        <div key={addr.id} className="border border-gray-200 p-6 flex justify-between items-start gap-4">
                                             <div>
-                                                <div className="flex items-center gap-2 mb-2"><span className="font-bold text-sm uppercase">{addr.street}</span>{addr.isDefault && <span className="text-[9px] bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 font-bold uppercase tracking-widest rounded-full">Default</span>}</div>
+                                                <div className="flex items-center gap-2 mb-2 flex-wrap"><span className="font-bold text-sm uppercase">{addr.street}</span>{addr.isDefault && <span className="text-[9px] bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 font-bold uppercase tracking-widest rounded-full">Default</span>}</div>
                                                 <p className="text-xs text-gray-600 leading-relaxed uppercase">{addr.barangay}, {addr.city}, {addr.province}</p>
                                                 <p className="text-xs text-gray-600 leading-relaxed uppercase">{addr.region}, {addr.zip}</p>
                                             </div>
-                                            <button className="text-[10px] font-bold text-gray-400 uppercase hover:text-red-600 cursor-pointer">Delete</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* PAYMENT TAB */}
-                    {activeTab === 'Payment' && (
-                        <div className="animate-fade-in">
-                            <div className="flex justify-between items-center border-b border-gray-100 pb-6 mb-8">
-                                <h2 className="text-xl font-bold text-black mb-1">Payment Methods</h2>
-                                <button onClick={() => setPaymentModalOpen(true)} className="bg-black text-white px-6 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-gray-800 transition shadow-md cursor-pointer">
-                                    <PlusIcon /> Add New Method
-                                </button>
-                            </div>
-                            {savedPayments.length === 0 ? (
-                                <div className="text-center py-20 text-gray-400 uppercase tracking-widest text-[10px]">NO PAYMENT METHODS SAVED.</div>
-                            ) : (
-                                <div className="space-y-6">
-                                    {savedPayments.map(pay => (
-                                        <div key={pay.id} className="border border-gray-200 p-6 flex justify-between items-center">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-16 h-10 bg-gray-50 flex items-center justify-center border border-gray-100 uppercase font-bold text-xs tracking-widest">{pay.type}</div>
-                                                {pay.isDefault && <span className="text-[9px] bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 font-bold uppercase tracking-widest rounded-full">Default</span>}
-                                            </div>
-                                            <button className="text-[10px] font-bold text-gray-400 uppercase hover:text-red-600 cursor-pointer">Delete</button>
+                                            <button onClick={() => handleDeleteAddress(addr.id)} className="text-[10px] font-bold text-gray-400 uppercase hover:text-red-600 cursor-pointer">Delete</button>
                                         </div>
                                     ))}
                                 </div>
@@ -272,20 +288,46 @@ export default function Profile() {
                                 ) : (
                                     filteredOrders.map(order => (
                                         <div key={order.id} className="border border-gray-200 p-6 shadow-sm rounded-sm">
-                                            <div className="flex justify-between border-b border-gray-100 pb-3 mb-4">
+                                            <div className="flex justify-between border-b border-gray-100 pb-3 mb-4 gap-4">
                                                 <p className="text-xs font-bold text-black uppercase">Order <span className="text-gray-500 font-normal ml-1">{order.order_number}</span></p>
                                                 <span className="text-xs font-bold text-red-600 uppercase tracking-widest">{order.status}</span>
                                             </div>
-                                            {order.items.map((item, i) => (
-                                                <div key={i} className="flex justify-between text-sm mb-4">
-                                                    <div className="flex gap-4">
-                                                        <div className="w-16 h-20 bg-gray-100 rounded-sm"><img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=800" className="w-full h-full object-cover grayscale"/></div>
-                                                        <div><p className="font-bold uppercase tracking-widest text-[11px]">{item.product.name}</p><p className="text-xs text-gray-500 mt-1">x{item.quantity}</p></div>
+                                            <div className="space-y-4">
+                                                {order.items.map((item, i) => (
+                                                    <div key={i} className="flex flex-col sm:flex-row justify-between text-sm mb-4 border-b border-gray-50 pb-4 sm:border-none sm:pb-0 gap-4">
+                                                        <div className="flex gap-4 items-start">
+                                                            <div className="w-16 h-20 bg-gray-100 rounded-sm shrink-0"><img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=800" className="w-full h-full object-cover grayscale"/></div>
+                                                            <div><p className="font-bold uppercase tracking-widest text-[11px] leading-relaxed">{item.product.name}</p><p className="text-xs text-gray-500 mt-1">x{item.quantity}</p></div>
+                                                        </div>
+                                                        
+                                                        <div className="flex flex-col items-start sm:items-end gap-2 shrink-0 sm:pt-0 pt-2 sm:border-t-0 border-t border-gray-50">
+                                                            <p className="font-bold text-[11px] mb-1 sm:mb-2">₱{(item.price * item.quantity).toLocaleString()}</p>
+                                                            
+                                                            {order.status === 'Completed' && (
+                                                                <button 
+                                                                    onClick={() => setReviewingProduct({id: item.productId, name: item.product.name})}
+                                                                    className="text-[9px] font-bold uppercase tracking-widest text-black border border-black px-4 py-1.5 hover:bg-black hover:text-white transition rounded-sm cursor-pointer whitespace-nowrap"
+                                                                >
+                                                                    Submit Review
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <p className="font-bold text-[11px]">₱{(item.price * item.quantity).toLocaleString()}</p>
+                                                ))}
+                                            </div>
+                                            <div className="border-t border-gray-100 mt-4 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                                <div>
+                                                    {order.status === 'Completed' && (
+                                                        <button 
+                                                            onClick={() => handleRequestReturn(order.order_number)}
+                                                            className="text-[9px] font-bold uppercase tracking-widest text-red-600 hover:text-red-800 transition cursor-pointer"
+                                                        >
+                                                            Request Return/Refund
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            ))}
-                                            <div className="border-t border-gray-100 mt-4 pt-4 text-right"><p className="text-sm text-gray-500">Order Total: <span className="text-lg font-bold text-black ml-2">₱{order.total_amount.toLocaleString()}</span></p></div>
+                                                <p className="text-sm text-gray-500">Order Total: <span className="text-lg font-bold text-black ml-2">₱{order.total_amount.toLocaleString()}</span></p>
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -295,66 +337,57 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* --- UPGRADED MODALS (Height fixed & Centered & Lag Free) --- */}
             <AnimatePresence>
                 
-                {/* NEW ADDRESS MODAL */}
+                {/* ADDRESS MODAL */}
                 {isAddressModalOpen && (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/60" onClick={() => setAddressModalOpen(false)}></motion.div>
-                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={fastTransition} className="bg-white w-full max-w-lg relative z-10 shadow-2xl p-12 flex flex-col rounded-sm h-[600px]">
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={fastTransition} className="bg-white w-full max-w-lg relative z-10 shadow-2xl p-8 md:p-12 flex flex-col rounded-sm h-[600px] overflow-hidden">
                             <button onClick={() => setAddressModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-black cursor-pointer"><CloseIcon /></button>
                             <h2 className="text-xl font-bold uppercase tracking-widest mb-2 mt-2">New Address</h2>
-                            <p className="text-xs text-gray-500 mb-8 pb-6 border-b border-gray-100">Add shipping details for faster checkout.</p>
-                            <form onSubmit={handleAddAddress} className="space-y-6 flex-1 overflow-y-auto pr-2 scrollbar-hide">
-                                <div className="grid grid-cols-2 gap-4"><input type="text" placeholder="Region" required value={addressForm.region} onChange={(e)=>setAddressForm({...addressForm, region: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /><input type="text" placeholder="Province" required value={addressForm.province} onChange={(e)=>setAddressForm({...addressForm, province: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /></div>
-                                <div className="grid grid-cols-2 gap-4"><input type="text" placeholder="City" required value={addressForm.city} onChange={(e)=>setAddressForm({...addressForm, city: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /><input type="text" placeholder="Barangay" required value={addressForm.barangay} onChange={(e)=>setAddressForm({...addressForm, barangay: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /></div>
+                            <p className="text-xs text-gray-500 mb-8 pb-6 border-b border-gray-100">Add shipping details.</p>
+                            <form onSubmit={handleAddAddress} id="addressSubmitForm" className="space-y-6 flex-1 overflow-y-auto pr-2 scrollbar-hide">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" placeholder="Region" required value={addressForm.region} onChange={(e)=>setAddressForm({...addressForm, region: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /><input type="text" placeholder="Province" required value={addressForm.province} onChange={(e)=>setAddressForm({...addressForm, province: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /></div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><input type="text" placeholder="City" required value={addressForm.city} onChange={(e)=>setAddressForm({...addressForm, city: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /><input type="text" placeholder="Barangay" required value={addressForm.barangay} onChange={(e)=>setAddressForm({...addressForm, barangay: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" /></div>
                                 <input type="text" placeholder="Street / Bldg / Unit" required value={addressForm.street} onChange={(e)=>setAddressForm({...addressForm, street: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition uppercase" />
                                 <input type="text" placeholder="Zip Code" required maxLength="4" value={addressForm.zip} onChange={(e)=>setAddressForm({...addressForm, zip: e.target.value})} className="w-full border border-gray-300 p-3 text-sm focus:border-black outline-none transition" />
-                                <label className="flex items-center gap-3 cursor-pointer pt-2 group"><input type="checkbox" checked={addressForm.isDefault} onChange={(e)=>setAddressForm({...addressForm, isDefault: e.target.checked})} className="accent-black w-4 h-4 cursor-pointer" /><span className="text-xs text-gray-600 uppercase tracking-widest group-hover:text-black transition">Set as default shipping address</span></label>
+                                <label className="flex items-center gap-3 cursor-pointer pt-2 group"><input type="checkbox" checked={addressForm.isDefault} onChange={(e)=>setAddressForm({...addressForm, isDefault: e.target.checked})} className="accent-black w-4 h-4 cursor-pointer" /><span className="text-xs text-gray-600 uppercase tracking-widest group-hover:text-black transition">Set as default address</span></label>
                             </form>
-                            <button type="submit" form="addressSubmitForm" className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition cursor-pointer mt-8">Save Address</button>
-                            <form id="addressSubmitForm" onSubmit={handleAddAddress}></form>
+                            <button type="submit" form="addressSubmitForm" className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition cursor-pointer mt-8 shrink-0">Save Address</button>
                         </motion.div>
                     </div>
                 )}
 
-                {/* NEW PAYMENT MODAL */}
-                {isPaymentModalOpen && (
+                {/* --- NEW: RETURN REQUEST MODAL --- */}
+                {returnModal.isOpen && (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/60" onClick={() => setPaymentModalOpen(false)}></motion.div>
-                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={fastTransition} className="bg-white w-full max-w-lg relative z-10 shadow-2xl p-12 flex flex-col rounded-sm h-[600px]">
-                            <button onClick={() => setPaymentModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-black cursor-pointer"><CloseIcon /></button>
-                            <h2 className="text-xl font-bold uppercase tracking-widest mb-2 mt-2">Add Payment</h2>
-                            <p className="text-xs text-gray-500 mb-8 pb-6 border-b border-gray-100">Select a payment type to save.</p>
-                            <form onSubmit={handleAddPayment} className="flex-1 space-y-4">
-                                <label className="flex items-center gap-4 border border-gray-200 p-5 cursor-pointer hover:border-black transition">
-                                    <input type="radio" name="paymentType" value="GCash" required onChange={(e)=>setPaymentForm({...paymentForm, type: e.target.value})} className="accent-black w-4 h-4" />
-                                    <span className="text-sm font-bold uppercase tracking-widest flex-1">GCash</span>
-                                    <span className="text-[10px] text-green-600 font-bold uppercase tracking-widest">Active</span>
-                                </label>
-                                <label className="flex items-center gap-4 border border-gray-100 p-5 opacity-40 cursor-not-allowed">
-                                    <input type="radio" name="paymentType" value="Card" disabled className="accent-black w-4 h-4 cursor-not-allowed" />
-                                    <span className="text-sm font-bold uppercase tracking-widest flex-1 text-gray-400">Credit / Debit Card</span>
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Disabled</span>
-                                </label>
-                                <label className="flex items-center gap-4 border border-gray-100 p-5 opacity-40 cursor-not-allowed">
-                                    <input type="radio" name="paymentType" value="Mastercard" disabled className="accent-black w-4 h-4 cursor-not-allowed" />
-                                    <span className="text-sm font-bold uppercase tracking-widest flex-1 text-gray-400">Mastercard</span>
-                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Disabled</span>
-                                </label>
-                                <div className="pt-6 border-t border-gray-100 mt-6">
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input type="checkbox" checked={paymentForm.isDefault} onChange={(e)=>setPaymentForm({...paymentForm, isDefault: e.target.checked})} className="accent-black w-4 h-4 cursor-pointer" />
-                                        <span className="text-xs text-gray-600 uppercase tracking-widest group-hover:text-black transition">Set as default payment method</span>
-                                    </label>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/60" onClick={() => setReturnModal({isOpen: false, orderNumber: ''})}></motion.div>
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} transition={fastTransition} className="bg-white w-full max-w-lg relative z-10 shadow-2xl p-8 md:p-12 flex flex-col rounded-sm overflow-hidden">
+                            <button onClick={() => setReturnModal({isOpen: false, orderNumber: ''})} className="absolute top-6 right-6 text-gray-400 hover:text-black cursor-pointer"><CloseIcon /></button>
+                            <h2 className="text-xl font-bold uppercase tracking-widest mb-2 mt-2">Request Return</h2>
+                            <p className="text-xs text-gray-500 mb-8 pb-6 border-b border-gray-100">Order {returnModal.orderNumber}</p>
+                            
+                            <form onSubmit={handleSubmitReturn} className="space-y-8">
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold block mb-3">Reason for Return</label>
+                                    <select required value={returnForm.reason} onChange={e => setReturnForm({...returnForm, reason: e.target.value})} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition bg-transparent">
+                                        <option value="" disabled>Select a reason...</option>
+                                        <option value="Damaged/Leaking Bottle">Damaged or Leaking Bottle</option>
+                                        <option value="Wrong Item Received">Wrong Item Received</option>
+                                        <option value="Defective Sprayer">Defective Sprayer Mechanism</option>
+                                    </select>
                                 </div>
+                                <div>
+                                    <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold block mb-3">Additional Details</label>
+                                    <textarea required value={returnForm.details} onChange={e => setReturnForm({...returnForm, details: e.target.value})} rows="4" placeholder="Please describe the issue. Note: An unboxing video will be required via email." className="w-full border border-gray-200 p-4 text-sm outline-none focus:border-black transition resize-none"></textarea>
+                                </div>
+                                <button type="submit" className="w-full bg-red-600 text-white py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-red-800 transition cursor-pointer mt-4 shadow-sm">Submit Request</button>
                             </form>
-                            <button type="submit" form="paymentSubmitForm" className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition cursor-pointer mt-8 shadow-md">Save Payment Method</button>
-                            <form id="paymentSubmitForm" onSubmit={handleAddPayment}></form>
                         </motion.div>
                     </div>
                 )}
+
             </AnimatePresence>
         </div>
     );

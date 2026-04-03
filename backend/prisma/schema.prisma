@@ -3,113 +3,104 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id             Int      @id @default(autoincrement())
+  id             Int             @id @default(autoincrement())
   fullname       String
-  email          String   @unique
+  email          String          @unique
   password       String
-  role           String   @default("customer")
+  role           String          @default("customer")
   resetOtp       String?
   resetOtpExpiry DateTime?
-  
-  avatar         String?   
-  username       String?  @unique 
-  isUsernameSet  Boolean  @default(false)
-  
+  avatar         String?
+  username       String?         @unique
+  isUsernameSet  Boolean         @default(false)
+  createdAt      DateTime        @default(now())
   addresses      Address[]
-  paymentMethods PaymentMethod[]
   orders         Order[]
-  reviews        Review[] 
-  
-  // PHASE 3 ADDITIONS
-  wishlist       Wishlist[]
+  paymentMethods PaymentMethod[]
+  reviews        Review[]
   stockAlerts    StockAlert[]
-  
-  createdAt      DateTime @default(now())
+  wishlist       Wishlist[]
 }
 
 model Address {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   street    String
   barangay  String
   city      String
   province  String
   region    String
   zip       String
-  isDefault Boolean  @default(false)
-  orders    Order[]  
+  isDefault Boolean @default(false)
+  user      User    @relation(fields: [userId], references: [id])
+  orders    Order[]
 }
 
 model PaymentMethod {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  type      String   // "GCash"
-  isDefault Boolean  @default(false)
+  type      String
+  isDefault Boolean @default(false)
+  user      User    @relation(fields: [userId], references: [id])
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  category    String
-  description String
-  price       Float
-  price30ml   Float?
-  price3ml    Float?
-  stock       Int
-  
-  // LUXURY UPGRADES (PHASE 1)
-  scentFamily String?
-  topNotes    String?
-  heartNotes  String?
-  baseNotes   String?
-  imageUrl    String?    // Main catalog image
-  images      String[]   @default([]) // Image gallery
-  tags        String[]   @default([])
-  
-  orderItems  OrderItem[]
-  reviews     Review[]    
-  wishlist    Wishlist[]
-  stockAlerts StockAlert[]
-
-  createdAt   DateTime   @default(now())
+  id              Int          @id @default(autoincrement())
+  name            String
+  category        String
+  description     String
+  details         String?
+  price           Float?
+  price30ml       Float?
+  price3ml        Float?
+  stock100ml      Int          @default(0)
+  stock30ml       Int          @default(0)
+  stock3ml        Int          @default(0)
+  images          String[]
+  topNotes        String?
+  heartNotes      String?
+  baseNotes       String?
+  scentFamily     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  cover_image_url String?
+  orderItems      OrderItem[]
+  reviews         Review[]
+  stockAlerts     StockAlert[]
+  wishlists       Wishlist[]
 }
 
 model Order {
-  id               Int      @id @default(autoincrement())
-  order_number     String   @unique
-  userId           Int
-  user             User     @relation(fields: [userId], references: [id])
-  total_amount     Float
-  payment_method   String
-  status           String   @default("Pending")
-  
+  id                Int                  @id @default(autoincrement())
+  order_number      String               @unique
+  userId            Int
+  total_amount      Float
+  payment_method    String
+  status            String               @default("Pending")
   shippingAddressId Int
-  shippingAddress   Address  @relation(fields: [shippingAddressId], references: [id])
-  
-  items            OrderItem[]
-  statusHistory    OrderStatusHistory[]
-  
-  couponId         Int?
-  coupon           Coupon?  @relation(fields: [couponId], references: [id])
-
-  createdAt        DateTime @default(now())
+  couponId          Int?
+  createdAt         DateTime             @default(now())
+  coupon            Coupon?              @relation(fields: [couponId], references: [id])
+  shippingAddress   Address              @relation(fields: [shippingAddressId], references: [id])
+  user              User                 @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+  statusHistory     OrderStatusHistory[]
 }
 
 model OrderItem {
   id        Int     @id @default(autoincrement())
   orderId   Int
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId Int
-  product   Product @relation(fields: [productId], references: [id])
   quantity  Int     @default(1)
   price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
 }
 
 model Review {
@@ -117,49 +108,47 @@ model Review {
   rating    Int
   comment   String?
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   productId Int
-  product   Product  @relation(fields: [productId], references: [id])
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
-
-// --- NEW ARCHITECTURE MODELS ---
 
 model OrderStatusHistory {
   id        Int      @id @default(autoincrement())
   orderId   Int
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   status    String
   createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model Wishlist {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId Int
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, productId]) // Prevent users from saving the same item twice
+  @@unique([userId, productId])
 }
 
 model StockAlert {
   id         Int      @id @default(autoincrement())
   userId     Int
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId  Int
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   isNotified Boolean  @default(false)
   createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Coupon {
   id            Int      @id @default(autoincrement())
   code          String   @unique
-  discountType  String   // "PERCENTAGE" or "FIXED"
+  discountType  String
   discountValue Float
   isActive      Boolean  @default(true)
-  orders        Order[]
   createdAt     DateTime @default(now())
+  orders        Order[]
 }

@@ -86,7 +86,7 @@ export default function AuthModal({ isOpen, onClose }) {
         const token = recaptchaRef.current?.getValue();
         if (!token) { setError("Please complete the reCAPTCHA."); setSubmitLoading(false); return; }
         try {
-            const res = await axios.post('http://localhost:5000/api/login', { ...formData, recaptchaToken: token });
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/login`, { ...formData, recaptchaToken: token });
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
             window.location.reload();
@@ -105,7 +105,7 @@ export default function AuthModal({ isOpen, onClose }) {
         if (!token) { setRegError("reCAPTCHA is required."); setSubmitLoading(false); return; }
         if (!isPasswordValid) { setRegError("Please ensure passwords match and meet requirements."); setSubmitLoading(false); return; }
         try {
-            await axios.post('http://localhost:5000/api/send-register-otp', { email: formData.email, recaptchaToken: token });
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/send-register-otp`, { email: formData.email, recaptchaToken: token });
             setStep(2); setResendTimer(60); setSubmitLoading(false);
             setTimeout(() => regOtpRefs.current[0]?.focus(), 100); 
         } catch (err) { setRegError(err.response?.data?.message || "Verification failed."); resetFormState(); }
@@ -116,7 +116,7 @@ export default function AuthModal({ isOpen, onClose }) {
         const token = recaptchaRef.current?.getValue();
         setSubmitLoading(true); setRegError('');
         try {
-            await axios.post('http://localhost:5000/api/send-register-otp', { email: formData.email, recaptchaToken: token });
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/send-register-otp`, { email: formData.email, recaptchaToken: token });
             setResendTimer(60); setSubmitLoading(false);
         } catch (err) {
             setRegError("reCAPTCHA expired. Please go back and verify again.");
@@ -130,7 +130,7 @@ export default function AuthModal({ isOpen, onClose }) {
         if (combinedOtp.length < 6) { setRegError("Please enter the full 6-digit code."); return; }
         setSubmitLoading(true); setRegError('');
         try {
-            const res = await axios.post('http://localhost:5000/api/register', { ...formData, otp: combinedOtp });
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/register`, { ...formData, otp: combinedOtp });
             localStorage.setItem('token', res.data.token);
             localStorage.setItem('user', JSON.stringify(res.data.user));
             window.location.reload();
@@ -142,7 +142,7 @@ export default function AuthModal({ isOpen, onClose }) {
         const token = recaptchaRef.current?.getValue();
         if(!token) { setError("reCAPTCHA is required."); setSubmitLoading(false); return; }
         try { 
-            await axios.post('http://localhost:5000/api/forgot-password', { email: formData.email, recaptchaToken: token }); 
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/forgot-password`, { email: formData.email, recaptchaToken: token }); 
             setStep(2); setSubmitLoading(false);
             setTimeout(() => forgotOtpRefs.current[0]?.focus(), 100);
         } catch (err) { setError(err.response?.data?.message || "Reset failed."); resetFormState(); }
@@ -162,7 +162,7 @@ export default function AuthModal({ isOpen, onClose }) {
         if(!isPasswordValid) { setError("Please ensure passwords match and meet requirements."); return; } 
         setSubmitLoading(true); setError('');
         try { 
-            await axios.post('http://localhost:5000/api/reset-password', { email: formData.email, otp: combinedOtp, newPassword: formData.password }); 
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/reset-password`, { email: formData.email, otp: combinedOtp, newPassword: formData.password }); 
             setView('login'); setStep(1); setSubmitLoading(false); 
         } catch (err) { setError(err.response?.data?.message || "Reset failed."); setSubmitLoading(false); } 
     };

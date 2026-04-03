@@ -23,7 +23,7 @@ export default function SearchOverlay({ isOpen, onClose }) {
     const handleSearch = (e) => {
         e.preventDefault();
         if (!query.trim()) return;
-        navigate(`/collection?search=${encodeURIComponent(query.trim())}`);
+        navigate(`/collection?q=${encodeURIComponent(query.trim())}`);
         onClose(); 
         setQuery('');
     };

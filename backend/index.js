@@ -143,13 +143,73 @@ app.put('/api/users/profile', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- STANDARD ROUTES ---
+// --- ADDRESS PERSISTENCE ROUTES ---
+app.get('/api/users/addresses', authenticateToken, async (req, res) => {
+    try {
+        const addresses = await prisma.address.findMany({
+            where: { userId: req.user.userId },
+            orderBy: { isDefault: 'desc' }
+        });
+        res.json({ status: 'success', data: addresses });
+    } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
+});
+
+app.post('/api/users/addresses', authenticateToken, async (req, res) => {
+    try {
+        const { street, barangay, city, province, region, zip, isDefault } = req.body;
+        
+        if (isDefault) {
+            await prisma.address.updateMany({
+                where: { userId: req.user.userId, isDefault: true },
+                data: { isDefault: false }
+            });
+        }
+        
+        const newAddress = await prisma.address.create({
+            data: { userId: req.user.userId, street, barangay, city, province, region, zip, isDefault }
+        });
+        
+        res.status(201).json({ status: 'success', data: newAddress });
+    } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
+});
+
+app.delete('/api/users/addresses/:id', authenticateToken, async (req, res) => {
+    try {
+        await prisma.address.delete({
+            where: { id: parseInt(req.params.id) }
+        });
+        res.json({ status: 'success', message: 'Address removed.' });
+    } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
+});
+
+// --- ADMIN PRODUCT ROUTES (UPDATED FOR MULTIPLE IMAGES & DETAILS) ---
 app.post('/api/products', authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const { name, category, description, price, price30ml, price3ml, stock } = req.body;
-        const newProduct = await prisma.product.create({ data: { name, category, description, price, price30ml, price3ml, stock } });
+        const { name, category, description, details, price, price30ml, price3ml, stock100ml, stock30ml, stock3ml, images, cover_image_url, topNotes, heartNotes, baseNotes, scentFamily } = req.body;
+        const newProduct = await prisma.product.create({ 
+            data: { name, category, description, details, price, price30ml, price3ml, stock100ml, stock30ml, stock3ml, images, cover_image_url, topNotes, heartNotes, baseNotes, scentFamily } 
+        });
         res.status(201).json({ status: 'success', data: newProduct });
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
+});
+
+app.put('/api/products/:id', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { name, category, description, details, price, price30ml, price3ml, stock100ml, stock30ml, stock3ml, images, cover_image_url, topNotes, heartNotes, baseNotes, scentFamily } = req.body;
+        const updatedProduct = await prisma.product.update({ 
+            where: { id: parseInt(req.params.id) },
+            data: { name, category, description, details, price, price30ml, price3ml, stock100ml, stock30ml, stock3ml, images, cover_image_url, topNotes, heartNotes, baseNotes, scentFamily } 
+        });
+        res.json({ status: 'success', data: updatedProduct });
+    } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
+});
+
+app.delete('/api/products/:id', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const productId = parseInt(req.params.id);
+        await prisma.product.delete({ where: { id: productId } });
+        res.json({ status: 'success', message: 'Product successfully removed.' });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Could not delete product.' }); }
 });
 
 app.get('/api/products', async (req, res) => {
@@ -163,7 +223,6 @@ app.get('/api/products', async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- NEW: FETCH PRODUCT WITH REVIEWS ---
 app.get('/api/products/:id', async (req, res) => {
     try {
         const product = await prisma.product.findUnique({ 
@@ -180,7 +239,31 @@ app.get('/api/products/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- NEW: SUBMIT VERIFIED REVIEW ---
+// --- NEW: CHECK IF USER HAS PURCHASED BEFORE REVIEWING ---
+app.get('/api/orders/check-purchase/:productId', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const productId = parseInt(req.params.productId);
+
+        const completedOrder = await prisma.order.findFirst({
+            where: {
+                userId: userId,
+                status: 'Completed',
+                items: {
+                    some: {
+                        productId: productId
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({ hasPurchased: !!completedOrder });
+    } catch (error) {
+        console.error("Error checking purchase status:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 app.post('/api/products/:id/reviews', authenticateToken, async (req, res) => {
     try {
         const productId = parseInt(req.params.id);
@@ -190,13 +273,13 @@ app.post('/api/products/:id/reviews', authenticateToken, async (req, res) => {
         const hasPurchased = await prisma.order.findFirst({
             where: {
                 userId: userId,
-                status: { notIn: ['Cancelled', 'Return/Refund'] },
+                status: 'Completed', 
                 items: { some: { productId: productId } }
             }
         });
 
         if (!hasPurchased) {
-            return res.status(403).json({ status: 'error', message: 'You must purchase this fragrance before leaving a review.' });
+            return res.status(403).json({ status: 'error', message: 'You can only leave a review after your order is marked as COMPLETED.' });
         }
 
         const existingReview = await prisma.review.findFirst({
@@ -444,12 +527,28 @@ app.put('/api/orders/:id/status', authenticateToken, requireAdmin, async (req, r
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-app.delete('/api/products/:id', authenticateToken, requireAdmin, async (req, res) => {
+// --- RETURN REQUEST ROUTE ---
+app.post('/api/orders/:orderNumber/return', authenticateToken, async (req, res) => {
     try {
-        const productId = parseInt(req.params.id);
-        await prisma.product.delete({ where: { id: productId } });
-        res.json({ status: 'success', message: 'Product successfully removed.' });
-    } catch (error) { res.status(500).json({ status: 'error', message: 'Could not delete product.' }); }
+        const { reason, details } = req.body;
+        
+        const order = await prisma.order.findFirst({
+            where: { order_number: req.params.orderNumber, userId: req.user.userId }
+        });
+
+        if (!order) return res.status(404).json({ status: 'error', message: 'Order not found.' });
+        if (order.status !== 'Completed') return res.status(400).json({ status: 'error', message: 'Only completed orders can be returned.' });
+
+        await prisma.order.update({
+            where: { id: order.id },
+            data: { status: 'Return/Refund' }
+        });
+
+        res.json({ status: 'success', message: 'Return request submitted successfully.' });
+    } catch (error) { 
+        console.error('Return Error:', error);
+        res.status(500).json({ status: 'error', message: error.message }); 
+    }
 });
 
 app.get('/api/analytics/predict', authenticateToken, requireAdmin, async (req, res) => {
@@ -473,18 +572,19 @@ app.get('/api/analytics/predict', authenticateToken, requireAdmin, async (req, r
             const averageDailySales = totalSoldLast30Days > 0 ? (totalSoldLast30Days / 30) : 0;
             let predictedDaysLeft = "Safe", status = "Healthy", statusColor = "#4CAF50"; 
             
+            // Assume predicting off 100ml stock for simplicity in this view
             if (averageDailySales > 0) {
-                const daysLeft = Math.floor(product.stock / averageDailySales);
+                const daysLeft = Math.floor(product.stock100ml / averageDailySales);
                 predictedDaysLeft = `${daysLeft} days`;
                 if (daysLeft <= 14) { status = "Restock Immediately"; statusColor = "#ff4d4d"; } 
                 else if (daysLeft <= 30) { status = "Monitor Stock"; statusColor = "#fdd835"; }
-            } else if (product.stock === 0) { predictedDaysLeft = "0 days"; status = "Out of Stock"; statusColor = "#ff4d4d"; } 
+            } else if (product.stock100ml === 0) { predictedDaysLeft = "0 days"; status = "Out of Stock"; statusColor = "#ff4d4d"; } 
             else if (totalSoldLast30Days === 0) { predictedDaysLeft = "Insufficient Data"; status = "New Product / No Sales"; statusColor = "#888"; }
             
             return { 
                 id: product.id, 
                 name: product.name, 
-                currentStock: product.stock, 
+                currentStock: product.stock100ml, 
                 totalSold: totalSoldLast30Days,
                 dailyVelocity: averageDailySales.toFixed(2), 
                 predictedDaysLeft, 

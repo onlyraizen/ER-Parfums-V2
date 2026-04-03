@@ -12,7 +12,6 @@ export default function Cart({ cart, setCart }) {
     const [standardForm, setStandardForm] = useState({ fullname: '', email: '', phone: '' });
     const [submitLoading, setSubmitLoading] = useState(false);
     
-    // --- PHASE 4: SUCCESS STATE ---
     const [isSuccess, setIsSuccess] = useState(false); 
     const [orderNumber, setOrderNumber] = useState('');
 
@@ -30,10 +29,9 @@ export default function Cart({ cart, setCart }) {
         const fetchUserDataAndData = async () => {
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const userRes = await axios.get('http://localhost:5000/api/users/me', config);
+                const userRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/me`, config);
                 setUser(userRes.data.data);
                 
-                // Pre-fill phone if it exists in the DB
                 setStandardForm({ 
                     fullname: userRes.data.data.fullname, 
                     email: userRes.data.data.email,
@@ -67,17 +65,16 @@ export default function Cart({ cart, setCart }) {
             const config = { headers: { Authorization: `Bearer ${token}` } };
 
             if (selectedPaymentMethod === 'GCash') {
-                const res = await axios.post('http://localhost:5000/api/checkout/paymongo', orderPayload, config);
+                const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/checkout/paymongo`, orderPayload, config);
                 if (res.data && res.data.checkoutUrl) {
                     window.location.href = res.data.checkoutUrl; 
                 } else {
-                    alert("Failed to generate GCash payment link. Please try again.");
+                    alert("Failed to generate payment link. Please try again.");
                     setSubmitLoading(false);
                 }
             } else {
-                const res = await axios.post('http://localhost:5000/api/orders', orderPayload, config);
+                const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/orders`, orderPayload, config);
                 
-                // Trigger Phase 4 Success State
                 setOrderNumber(res.data.data.order_number);
                 setCart([]);
                 localStorage.removeItem('er_cart'); 
@@ -89,7 +86,6 @@ export default function Cart({ cart, setCart }) {
         }
     };
 
-    // --- PHASE 4: LUXURY ORDER CONFIRMATION SCREEN ---
     if (isSuccess) {
         return (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pt-40 pb-24 flex flex-col items-center justify-center font-sans bg-gray-50 text-center px-10">
@@ -151,9 +147,11 @@ export default function Cart({ cart, setCart }) {
                                         <input type="radio" name="paymentType" value="COD" checked={selectedPaymentMethod === 'COD'} onChange={(e) => setSelectedPaymentMethod(e.target.value)} className="accent-black w-4 h-4 mt-1" />
                                         <span className="text-sm font-bold uppercase tracking-widest flex-1">Cash on Delivery</span>
                                     </label>
+                                    
+                                    {/* RENAMED FROM GCASH TO E-WALLETS/CARDS */}
                                     <label className={`flex items-start gap-4 border p-5 cursor-pointer transition ${selectedPaymentMethod === 'GCash' ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
                                         <input type="radio" name="paymentType" value="GCash" checked={selectedPaymentMethod === 'GCash'} onChange={(e) => setSelectedPaymentMethod(e.target.value)} className="accent-black w-4 h-4 mt-1" />
-                                        <span className="text-sm font-bold uppercase tracking-widest flex-1">GCash (via PayMongo)</span>
+                                        <span className="text-sm font-bold uppercase tracking-widest flex-1">E-Wallets & Cards (via PayMongo)</span>
                                     </label>
                                 </div>
                             </div>

@@ -10,9 +10,14 @@ import Profile from './pages/Profile';
 import Collection from './pages/Collection';
 import CartDrawer from './components/CartDrawer'; 
 import Footer from './components/Footer'; 
-
-// --- PHASE 4 FIX: NEW SEARCH OVERLAY IMPORT ---
 import SearchOverlay from './components/SearchOverlay';
+import StoreLocator from './pages/StoreLocator';
+
+// NEW LEGAL & CONTACT PAGES
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
+import RefundPolicy from './pages/RefundPolicy';
+import ContactUs from './pages/ContactUs';
 
 // ICONS
 const SearchIconSmall = () => (<svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 inline-block mr-2 -mt-0.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>);
@@ -40,20 +45,19 @@ function App() {
   const [isNavHovered, setIsNavHovered] = useState(false);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // --- PHASE 4 FIX: NEW SEARCH OVERLAY STATE ---
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
 
   const token = localStorage.getItem('token');
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
 
-  // Close menus when route changes
   useEffect(() => {
     setIsNavHovered(false);
     setIsCartDrawerOpen(false); 
     setIsMobileMenuOpen(false); 
-    setIsSearchOverlayOpen(false); // Close search when moving pages
+    setIsSearchOverlayOpen(false); 
+    // Scroll to top automatically when navigating to legal/contact pages
+    window.scrollTo(0, 0);
   }, [location]);
 
   const handleLogout = () => {
@@ -94,7 +98,6 @@ function App() {
   const isAdmin = location.pathname.startsWith('/admin');
   const isProfile = location.pathname === '/profile';
 
-  // Mobile menu or Search overlay overrides hover state
   const isSolid = !isHome || isNavHovered || isCartDrawerOpen || isMobileMenuOpen || isSearchOverlayOpen; 
   const navPositionClass = isHome ? 'absolute top-0 left-0 w-full z-50' : 'relative w-full z-50';
   const navBackgroundClass = isSolid ? 'bg-white border-b border-gray-100' : 'bg-transparent border-b border-transparent';
@@ -103,7 +106,6 @@ function App() {
 
   const Divider = () => <span className={`text-[10px] mx-4 font-light transition-colors duration-300 hidden md:inline ${isSolid ? 'text-gray-300' : 'text-white/40'}`}>|</span>;
 
-  // Custom link component for Desktop Nav
   const NavLink = ({ to, onClick, children, className="" }) => {
     const baseClass = `group relative inline-block ${textColor} uppercase font-bold text-[10px] tracking-[0.15em] transition-colors duration-300 cursor-pointer ${className}`;
     const lineClass = `absolute left-0 -bottom-1.5 w-full h-[1px] ${lineBgColor} scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`;
@@ -116,15 +118,10 @@ function App() {
   return (
     <div className="min-h-screen bg-white relative flex flex-col overflow-x-hidden">
       
-      {/* AUTH AND CART */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} />
       <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} cart={cart} setCart={setCart} updateQuantity={updateCartQuantity} requireAuth={requireAuth} />
-
-      {/* --- PHASE 4 FIX: SEARCH OVERLAY COMPONENT --- */}
       <SearchOverlay isOpen={isSearchOverlayOpen} onClose={() => setIsSearchOverlayOpen(false)} />
 
-
-      {/* MOBILE NAVIGATION OVERLAY */}
       <AnimatePresence>
           {isMobileMenuOpen && (
               <motion.div 
@@ -142,9 +139,7 @@ function App() {
                       <Link to="/collection" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-gray-400 transition-colors">The Collection</Link>
                       <Link to="/collection/Women" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-gray-400 transition-colors">Women</Link>
                       <Link to="/collection/Men" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-gray-400 transition-colors">Men</Link>
-                      
-                      {/* Mobile search is different, just navigates to the generic collection page */}
-                      <Link to="/collection" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-gray-400 transition-colors">Search</Link>
+                      <button onClick={() => { setIsMobileMenuOpen(false); setIsSearchOverlayOpen(true); }} className="hover:text-gray-400 transition-colors text-left text-lg font-normal tracking-[0.15em] uppercase logo-font">Search</button>
                   </div>
 
                   <div className="mt-auto pt-10 border-t border-gray-800 flex flex-col space-y-6 text-xs uppercase tracking-widest font-bold text-gray-400">
@@ -156,36 +151,33 @@ function App() {
                       ) : (
                           <button onClick={() => { setIsMobileMenuOpen(false); setAuthModalOpen(true); }} className="text-left hover:text-white transition-colors">Log In / Register</button>
                       )}
-                      <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white transition-colors">Customer Service</Link>
+                      <Link to="/stores" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white transition-colors">Find a Store</Link>
+                      <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-white transition-colors">Customer Service</Link>
                   </div>
               </motion.div>
           )}
       </AnimatePresence>
-
 
       {!isAdmin && (
           <nav className={`${navPositionClass} ${navBackgroundClass} flex flex-col transition-all duration-300 ease-out`} onMouseEnter={() => setIsNavHovered(true)} onMouseLeave={() => setIsNavHovered(false)}>
             <div className="px-6 md:px-10 pt-6 pb-6 flex flex-col">
                 <div className="flex justify-between items-center w-full">
                     
-                    {/* LEFT: Desktop Links & Mobile Hamburger */}
                     <div className="w-1/3 flex items-center">
                         <button className={`md:hidden ${textColor}`} onClick={() => setIsMobileMenuOpen(true)}>
                             <MenuIcon />
                         </button>
                         <div className="hidden md:flex items-center">
-                            <NavLink to="/">Find a Store</NavLink><Divider /><NavLink to="/">Customer Service</NavLink>
+                            <NavLink to="/stores">Find a Store</NavLink><Divider /><NavLink to="/contact">Customer Service</NavLink>
                         </div>
                     </div>
 
-                    {/* CENTER: Logo */}
                     <div className="w-1/3 flex justify-center">
                         <Link to="/" className="hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
                             <img src="/logo.png" alt="ER Parfums Logo" className="h-12 md:h-16 lg:h-20 w-auto object-contain transition-transform duration-300 hover:scale-105" />
                         </Link>
                     </div>
 
-                    {/* RIGHT: Desktop Auth & Cart */}
                     <div className="w-1/3 flex justify-end items-center">
                         <div className="hidden md:flex items-center">
                             {token ? (
@@ -193,7 +185,6 @@ function App() {
                             ) : (<NavLink onClick={() => setAuthModalOpen(true)}>Log In</NavLink>)}
                             <Divider />
                         </div>
-                        {/* Cart is always visible, even on mobile */}
                         <NavLink onClick={() => setIsCartDrawerOpen(true)}>
                             <span className="hidden md:inline">My Bag ({cartItemCount})</span>
                             <span className="md:hidden flex items-center gap-1"><BagIcon /> {cartItemCount}</span>
@@ -201,14 +192,11 @@ function App() {
                     </div>
                 </div>
                 
-                {/* Desktop Sub-Nav (Hidden on Mobile or Profile) */}
                 {!isProfile && (
                     <div className="hidden md:flex justify-center items-center space-x-16 mt-8 animate-fade-in">
                         <NavLink to="/collection">Highlights</NavLink>
                         <NavLink to="/collection/Women">Women</NavLink>
                         <NavLink to="/collection/Men">Men</NavLink>
-                        
-                        {/* --- FIXED SEARCH BUTTON HERE --- */}
                         <NavLink onClick={() => setIsSearchOverlayOpen(true)}><SearchIconSmall /> Search</NavLink>
                     </div>
                 )}
@@ -221,10 +209,17 @@ function App() {
           <Route path="/" element={<PageTransition><Home /></PageTransition>} />
           <Route path="/collection" element={<PageTransition><Collection addToCart={addToCart} /></PageTransition>} />
           <Route path="/collection/:category" element={<PageTransition><Collection addToCart={addToCart} /></PageTransition>} />
-          <Route path="/product/:id" element={<PageTransition><ProductDetails requireAuth={requireAuth} addToCart={addToCart} /></PageTransition>} />
+          <Route path="/product/:id" element={<PageTransition><ProductDetails addToCart={addToCart} /></PageTransition>} />
+          <Route path="/stores" element={<PageTransition><StoreLocator /></PageTransition>} />
           <Route path="/cart" element={<PageTransition><Cart cart={cart} setCart={setCart} /></PageTransition>} />
           <Route path="/admin" element={<PageTransition><AdminDashboard /></PageTransition>} />
           <Route path="/profile" element={<PageTransition><Profile /></PageTransition>} />
+          
+          {/* LEGAL & CONTACT ROUTES */}
+          <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
+          <Route path="/terms-of-use" element={<PageTransition><TermsOfUse /></PageTransition>} />
+          <Route path="/refund-policy" element={<PageTransition><RefundPolicy /></PageTransition>} />
+          <Route path="/contact" element={<PageTransition><ContactUs /></PageTransition>} />
         </Routes>
       </AnimatePresence>
 
