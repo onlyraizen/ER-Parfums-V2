@@ -18,7 +18,7 @@ const prisma = new PrismaClient();
 
 app.use(helmet()); 
 app.use(cors({
-    origin: 'https://er-parfums.vercel.app', 
+    origin: 'https://er-parfums-v2.vercel.app', 
     credentials: true
 }));
 app.use(express.json());
