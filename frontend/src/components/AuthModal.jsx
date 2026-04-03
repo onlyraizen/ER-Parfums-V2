@@ -206,7 +206,7 @@ export default function AuthModal({ isOpen, onClose }) {
                                 <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="Password" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors pr-10" />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />}</button>
                             </div>
-                            <div className="flex justify-center my-6"><ReCAPTCHA ref={recaptchaRef} sitekey="6Lf1f4MsAAAAAK4jpuGx7cgxXnZeXJK8L6O5h6X-" /></div>
+                            <div className="flex justify-center my-6"><ReCAPTCHA ref={recaptchaRef} sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} /></div>
                             <button type="submit" disabled={submitLoading} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300">
                                 {submitLoading ? 'Authenticating...' : 'Sign In'}
                             </button>
