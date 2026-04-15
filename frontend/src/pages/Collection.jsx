@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Swapped supabase for axios
+import axios from 'axios'; 
 
 export default function Collection({ addToCart }) {
     const { category } = useParams();
@@ -17,7 +17,6 @@ export default function Collection({ addToCart }) {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                // Call the Railway backend instead of Supabase directly
                 const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/products`, {
                     params: {
                         category: category || 'All',
@@ -33,7 +32,7 @@ export default function Collection({ addToCart }) {
             }
         };
         fetchProducts();
-        window.scrollTo(0, 0); // Good practice to scroll to top when category changes
+        window.scrollTo(0, 0); 
     }, [category, searchQuery]);
 
     const handleQuickAdd = (e, product) => {
@@ -78,15 +77,16 @@ export default function Collection({ addToCart }) {
                 </p>
             </header>
 
+            {/* NEW: The Sorting Dropdown UI */}
             {!loading && products.length > 0 && (
-                <div className="flex justify-end mb-8 text-[10px] uppercase tracking-widest font-bold text-gray-500">
-                    <div className="flex items-center gap-3">
+                <div className="flex justify-end mb-8">
+                    <div className="flex items-baseline gap-2 text-[10px] uppercase tracking-widest font-bold text-gray-500">
                         <label htmlFor="sortOptions">Sort By:</label>
                         <select 
                             id="sortOptions" 
                             value={sortBy} 
                             onChange={(e) => setSortBy(e.target.value)}
-                            className="border-none bg-transparent outline-none cursor-pointer focus:ring-0 text-black border-b border-black pb-1 uppercase tracking-widest"
+                            className="border-none bg-transparent outline-none cursor-pointer focus:ring-0 text-black font-bold uppercase tracking-widest p-0 pl-1"
                         >
                             <option value="Best Seller">Best Seller</option>
                             <option value="Price: Low to High">Price: Low to High</option>
