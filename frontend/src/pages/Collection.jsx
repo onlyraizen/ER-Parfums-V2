@@ -20,12 +20,18 @@ export default function Collection({ addToCart }) {
             try {
                 let query = supabase.from('Product').select('*');
 
-                if (category) {
-                    query = query.eq('category', category);
+                // Case-insensitive category search
+                if (category && category !== 'All' && category !== 'Highlights') {
+                    query = query.ilike('category', `%${category}%`);
                 }
 
                 if (searchQuery) {
                     query = query.ilike('name', `%${searchQuery}%`);
+                }
+
+                // If Highlights, just limit the return to mimic a "featured" view
+                if (category === 'Highlights') {
+                    query = query.limit(4);
                 }
                 
                 const { data, error } = await query;
@@ -64,14 +70,12 @@ export default function Collection({ addToCart }) {
     };
 
     // NEW: Sorting Logic
-    // We create a copy of the products array and sort it based on the dropdown selection
     const sortedProducts = [...products].sort((a, b) => {
         if (sortBy === 'Price: Low to High') {
             return (a.price || 0) - (b.price || 0);
         } else if (sortBy === 'Price: High to Low') {
             return (b.price || 0) - (a.price || 0);
         }
-        // For "Best Seller" or default, we just leave it in the order it came from the database
         return 0; 
     });
 
@@ -115,7 +119,6 @@ export default function Collection({ addToCart }) {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-16">
-                    {/* FIXED: We map over sortedProducts instead of products */}
                     {sortedProducts.map(product => {
                         const displayImage = product.cover_image_url || (product.images && product.images.length > 0 
                             ? product.images[0] 

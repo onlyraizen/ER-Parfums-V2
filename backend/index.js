@@ -182,7 +182,7 @@ app.delete('/api/users/addresses/:id', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- ADMIN PRODUCT ROUTES (UPDATED FOR MULTIPLE IMAGES & DETAILS) ---
+// --- ADMIN PRODUCT ROUTES ---
 app.post('/api/products', authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { name, category, description, details, price, price30ml, price3ml, stock100ml, stock30ml, stock3ml, images, cover_image_url, topNotes, heartNotes, baseNotes, scentFamily } = req.body;
@@ -212,15 +212,37 @@ app.delete('/api/products/:id', authenticateToken, requireAdmin, async (req, res
     } catch (error) { res.status(500).json({ status: 'error', message: 'Could not delete product.' }); }
 });
 
+// --- FETCH PRODUCTS (UPDATED FOR CATEGORIES) ---
 app.get('/api/products', async (req, res) => {
     try {
         const { category, search } = req.query;
         let whereClause = {};
-        if (category && category !== 'All' && category !== 'Highlights') whereClause.category = { equals: String(category).trim(), mode: 'insensitive' };
-        if (search) whereClause.OR = [ { name: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }, { category: { contains: search, mode: 'insensitive' } } ];
-        const products = await prisma.product.findMany({ where: whereClause, orderBy: { createdAt: 'desc' } });
+        
+        if (category && category !== 'All' && category !== 'Highlights') {
+            whereClause.category = { contains: String(category).trim(), mode: 'insensitive' };
+        }
+        
+        if (search) {
+            whereClause.OR = [ 
+                { name: { contains: search, mode: 'insensitive' } }, 
+                { description: { contains: search, mode: 'insensitive' } }, 
+                { category: { contains: search, mode: 'insensitive' } } 
+            ];
+        }
+        
+        let products = await prisma.product.findMany({ 
+            where: whereClause, 
+            orderBy: { createdAt: 'desc' } 
+        });
+
+        if (category === 'Highlights') {
+             products = products.slice(0, 4);
+        }
+
         res.json({ status: 'success', data: products });
-    } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
+    } catch (error) { 
+        res.status(500).json({ status: 'error', message: error.message }); 
+    }
 });
 
 app.get('/api/products/:id', async (req, res) => {
@@ -239,7 +261,7 @@ app.get('/api/products/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- NEW: CHECK IF USER HAS PURCHASED BEFORE REVIEWING ---
+// --- CHECK IF USER HAS PURCHASED BEFORE REVIEWING ---
 app.get('/api/orders/check-purchase/:productId', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -318,7 +340,6 @@ app.post('/api/send-register-otp', async (req, res) => {
         });
         res.json({ status: 'success', message: 'Registration OTP sent.' });
     } catch (error) { 
-        // 👇 THIS IS THE CRITICAL ADDITION 👇
         console.error("🔥 CRITICAL OTP ERROR:", error); 
         res.status(500).json({ status: 'error', message: 'Failed to send email.' }); 
     }
@@ -584,7 +605,6 @@ app.get('/api/analytics/predict', authenticateToken, requireAdmin, async (req, r
             const averageDailySales = totalSoldLast30Days > 0 ? (totalSoldLast30Days / 30) : 0;
             let predictedDaysLeft = "Safe", status = "Healthy", statusColor = "#4CAF50"; 
             
-            // Assume predicting off 100ml stock for simplicity in this view
             if (averageDailySales > 0) {
                 const daysLeft = Math.floor(product.stock100ml / averageDailySales);
                 predictedDaysLeft = `${daysLeft} days`;
@@ -629,7 +649,7 @@ app.get('/api/analytics/revenue', authenticateToken, requireAdmin, async (req, r
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- PAYMONGO WEBHOOK (AUTO-UPDATE TO "TO SHIP") ---
+// --- PAYMONGO WEBHOOK ---
 app.post('/api/webhooks/paymongo', async (req, res) => {
     try {
         const event = req.body;
@@ -642,7 +662,7 @@ app.post('/api/webhooks/paymongo', async (req, res) => {
                     where: { order_number: paidOrderNumber },
                     data: { status: 'Processing' }
                 });
-                console.log(`✅ SUCCESS: Order ${paidOrderNumber} automatically marked as TO SHIP`);
+                console.log(`✅ SUCCESS: Order ${paidOrderNumber} automatically marked as Processing`);
             }
         }
         res.status(200).send('Webhook received');

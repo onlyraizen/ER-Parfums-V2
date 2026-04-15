@@ -170,7 +170,6 @@ export default function ProductDetails({ addToCart }) {
                     </div>
 
                     <div className="text-sm text-gray-700 leading-loose space-y-6">
-                        <p className="font-semibold uppercase tracking-widest text-black text-[11px]">Fragrance Profile</p>
                         <p>{product.description}</p>
                         
                         {/* SHOPEE STYLE BULLET POINTS */}
@@ -316,7 +315,6 @@ export default function ProductDetails({ addToCart }) {
                                 </button>
                             </form>
                         ) : (
-                            /* FIXED: Slightly darkened borders and added a clear background to make the card visible */
                             <div className="p-10 text-center bg-gray-50 border border-gray-200 shadow-sm">
                                 <ShieldIcon className="w-8 h-8 mx-auto text-gray-400 mb-4" />
                                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-black mb-2">Verified Buyers Only</h3>
@@ -331,7 +329,6 @@ export default function ProductDetails({ addToCart }) {
 
                     <div className="lg:col-span-7 space-y-12">
                         {(!product.reviews || product.reviews.length === 0) ? (
-                            /* FIXED: Styled to perfectly match the left card and pop against the background */
                              <div className="flex items-center justify-center text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold py-24 bg-gray-50 border border-gray-200 shadow-sm">
                                  No reviews yet. Be the first to share your scent.
                              </div>

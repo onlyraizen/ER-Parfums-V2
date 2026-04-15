@@ -15,33 +15,37 @@ export default function Footer() {
     return (
         <footer className="bg-black text-white pt-20 pb-10 border-t border-gray-900 font-sans mt-auto">
             <div className="max-w-[1400px] mx-auto px-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
-                    <div className="lg:col-span-2">
-                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Shop</h3>
-                        <ul className="space-y-4">
-                            <li><Link to="/collection" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">All Fragrances</Link></li>
-                            <li><Link to="/collection/Women" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Women</Link></li>
-                            <li><Link to="/collection/Men" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Men</Link></li>
-                            <li><Link to="/collection/Highlights" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Highlights</Link></li>
-                        </ul>
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
+                    {/* Links Section */}
+                    <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Shop</h3>
+                            <ul className="space-y-4">
+                                <li><Link to="/collection" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">All Fragrances</Link></li>
+                                <li><Link to="/collection/Women" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Women</Link></li>
+                                <li><Link to="/collection/Men" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Men</Link></li>
+                                <li><Link to="/collection/Highlights" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Highlights</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Customer Service</h3>
+                            <ul className="space-y-4">
+                                <li><Link to="/contact" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Contact Us</Link></li>
+                                <li><Link to="/profile?tab=My+Purchase" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Shipping & Returns</Link></li>
+                                <li><Link to="/profile?tab=My+Purchase" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Order Status</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Legal</h3>
+                            <ul className="space-y-4">
+                                <li><Link to="/privacy-policy" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Privacy Policy</Link></li>
+                                <li><Link to="/terms-of-use" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Terms of Use</Link></li>
+                                <li><Link to="/refund-policy" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Refund Policy</Link></li>
+                            </ul>
+                        </div>
                     </div>
-                    <div className="lg:col-span-3">
-                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Customer Service</h3>
-                        <ul className="space-y-4">
-                            <li><Link to="/contact" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Contact Us</Link></li>
-                            {/* Redirecting to Profile -> My Purchases */}
-                            <li><Link to="/profile?tab=My+Purchase" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Shipping & Returns</Link></li>
-                            <li><Link to="/profile?tab=My+Purchase" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Order Status</Link></li>
-                        </ul>
-                    </div>
-                    <div className="lg:col-span-2">
-                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Legal</h3>
-                        <ul className="space-y-4">
-                            <li><Link to="/privacy-policy" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Privacy Policy</Link></li>
-                            <li><Link to="/terms-of-use" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Terms of Use</Link></li>
-                            <li><Link to="/refund-policy" className="text-[10px] text-gray-400 uppercase tracking-[0.1em] hover:text-white transition">Refund Policy</Link></li>
-                        </ul>
-                    </div>
+                    
+                    {/* Sign Up Section */}
                     <div className="lg:col-span-5 lg:pl-10">
                         <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Sign Up</h3>
                         <form className="space-y-4" onSubmit={handleSubscribe}>
