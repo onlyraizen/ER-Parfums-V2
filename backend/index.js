@@ -303,13 +303,25 @@ app.post('/api/send-register-otp', async (req, res) => {
         const { email, recaptchaToken } = req.body;
         const isHuman = await verifyRecaptcha(recaptchaToken);
         if (!isHuman) return res.status(400).json({ status: 'error', message: 'Please complete the reCAPTCHA.' });
+        
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) return res.status(400).json({ status: 'error', message: 'This email is already registered.' });
+        
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         registrationOtps.set(email, { otp, expires: Date.now() + 10 * 60000 });
-        await transporter.sendMail({ from: `"ER Parfums" <${process.env.EMAIL_USER}>`, to: email, subject: 'ER Parfums - Registration OTP', html: `<div style="text-align: center; padding: 20px;"><h2>ER PARFUMS</h2><p>Your one-time registration code is:</p><h1 style="letter-spacing: 5px;">${otp}</h1></div>` });
+        
+        await transporter.sendMail({ 
+            from: `"ER Parfums" <${process.env.EMAIL_USER}>`, 
+            to: email, 
+            subject: 'ER Parfums - Registration OTP', 
+            html: `<div style="text-align: center; padding: 20px;"><h2>ER PARFUMS</h2><p>Your one-time registration code is:</p><h1 style="letter-spacing: 5px;">${otp}</h1></div>` 
+        });
         res.json({ status: 'success', message: 'Registration OTP sent.' });
-    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed to send email.' }); }
+    } catch (error) { 
+        // 👇 THIS IS THE CRITICAL ADDITION 👇
+        console.error("🔥 CRITICAL OTP ERROR:", error); 
+        res.status(500).json({ status: 'error', message: 'Failed to send email.' }); 
+    }
 });
 
 app.post('/api/register', async (req, res) => {
