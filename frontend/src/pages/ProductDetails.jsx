@@ -169,26 +169,31 @@ export default function ProductDetails({ addToCart }) {
                         </div>
                     </div>
 
-                    <div className="text-sm text-gray-700 leading-loose space-y-6">
-                        <p>{product.description}</p>
-                        
-                        {/* SHOPEE STYLE BULLET POINTS */}
-                        {product.details && (
-                            <div className="pt-4 mt-4 border-t border-gray-100">
-                                <ul className="space-y-2 text-xs">
-                                    {product.details.split('\n').map((point, index) => {
-                                        if (!point.trim()) return null;
-                                        return (
-                                            <li key={index} className="flex items-start gap-2">
-                                                {!point.trim().startsWith('•') && <span className="text-gray-400 mt-1">•</span>}
-                                                <span>{point.trim()}</span>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
+                    {/* conditionally render description and details to prevent empty gaps */}
+                    {(product.description?.trim() || product.details?.trim()) && (
+                        <div className="text-sm text-gray-700 leading-loose space-y-6">
+                            {product.description?.trim() && (
+                                <p>{product.description}</p>
+                            )}
+                            
+                            {/* SHOPEE STYLE BULLET POINTS */}
+                            {product.details?.trim() && (
+                                <div className="pt-4 mt-4 border-t border-gray-100">
+                                    <ul className="space-y-2 text-xs">
+                                        {product.details.split('\n').map((point, index) => {
+                                            if (!point.trim()) return null;
+                                            return (
+                                                <li key={index} className="flex items-start gap-2">
+                                                    {!point.trim().startsWith('•') && <span className="text-gray-400 mt-1">•</span>}
+                                                    <span>{point.trim()}</span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="bg-gray-50 border border-gray-100 p-8 space-y-6">
                         <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-black border-b border-gray-200 pb-4">Olfactory Notes</h3>

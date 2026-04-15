@@ -71,6 +71,7 @@ export default function Cart({ cart, setCart }) {
                 } else {
                     alert("Failed to generate payment link. Please try again.");
                     setSubmitLoading(false);
+                    recaptchaRef.current?.reset();
                 }
             } else {
                 const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/orders`, orderPayload, config);
@@ -83,6 +84,7 @@ export default function Cart({ cart, setCart }) {
         } catch (error) { 
             alert(error.response?.data?.message || "Checkout failed. Please try again."); 
             setSubmitLoading(false);
+            recaptchaRef.current?.reset();
         }
     };
 
@@ -175,7 +177,7 @@ export default function Cart({ cart, setCart }) {
                             <span className="text-lg">₱{cartTotal.toLocaleString()}</span>
                         </div>
                         <div className="border-t border-gray-100 pt-4 mt-6 flex flex-col items-center">
-                            <div className="my-6 scale-90 origin-center"><ReCAPTCHA ref={recaptchaRef} sitekey="6Lf1f4MsAAAAAK4jpuGx7cgxXnZeXJK8L6O5h6X-" /></div>
+                            <div className="my-6 scale-90 origin-center"><ReCAPTCHA ref={recaptchaRef} sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} /></div>
                             <button type="submit" disabled={submitLoading} form="checkoutSubmitForm" className="w-full bg-black text-white py-5 text-xs font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition shadow-sm cursor-pointer disabled:bg-gray-400">
                                 {submitLoading ? 'Processing...' : 'Place Order'}
                             </button>
