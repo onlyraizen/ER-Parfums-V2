@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../api/supabase'; 
+import axios from 'axios'; // Swapped supabase for axios
 
 export default function Collection({ addToCart }) {
     const { category } = useParams();
@@ -8,7 +8,6 @@ export default function Collection({ addToCart }) {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true); 
     
-    // NEW: State to track the selected sorting option
     const [sortBy, setSortBy] = useState('Best Seller');
     
     const queryParams = new URLSearchParams(window.location.search);
@@ -18,26 +17,15 @@ export default function Collection({ addToCart }) {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                let query = supabase.from('Product').select('*');
-
-                // Case-insensitive category search
-                if (category && category !== 'All' && category !== 'Highlights') {
-                    query = query.ilike('category', `%${category}%`);
-                }
-
-                if (searchQuery) {
-                    query = query.ilike('name', `%${searchQuery}%`);
-                }
-
-                // If Highlights, just limit the return to mimic a "featured" view
-                if (category === 'Highlights') {
-                    query = query.limit(4);
-                }
+                // Call the Railway backend instead of Supabase directly
+                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/products`, {
+                    params: {
+                        category: category || 'All',
+                        search: searchQuery
+                    }
+                });
                 
-                const { data, error } = await query;
-                
-                if (error) throw error;
-                setProducts(data || []);
+                setProducts(res.data.data || []);
             } catch (error) { 
                 console.error("Error fetching collection:", error.message); 
             } finally {
@@ -45,6 +33,7 @@ export default function Collection({ addToCart }) {
             }
         };
         fetchProducts();
+        window.scrollTo(0, 0); // Good practice to scroll to top when category changes
     }, [category, searchQuery]);
 
     const handleQuickAdd = (e, product) => {
@@ -69,7 +58,6 @@ export default function Collection({ addToCart }) {
         });
     };
 
-    // NEW: Sorting Logic
     const sortedProducts = [...products].sort((a, b) => {
         if (sortBy === 'Price: Low to High') {
             return (a.price || 0) - (b.price || 0);
@@ -90,7 +78,6 @@ export default function Collection({ addToCart }) {
                 </p>
             </header>
 
-            {/* NEW: The Sorting Dropdown UI */}
             {!loading && products.length > 0 && (
                 <div className="flex justify-end mb-8 text-[10px] uppercase tracking-widest font-bold text-gray-500">
                     <div className="flex items-center gap-3">
@@ -153,7 +140,7 @@ export default function Collection({ addToCart }) {
 
                                 <div className="mt-4 flex flex-col items-center text-center">
                                     <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 mb-1">
-                                        {product.category === 'Women' ? 'Pour Femme' : product.category === 'Men' ? 'Pour Homme' : 'Unisex'}
+                                        {product.category.toLowerCase().includes('women') ? 'Pour Femme' : product.category.toLowerCase().includes('men') ? 'Pour Homme' : 'Unisex'}
                                     </p>
                                     <h3 className="text-lg font-serif tracking-wide text-gray-900">{product.name}</h3>
                                     
