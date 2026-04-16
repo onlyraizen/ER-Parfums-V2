@@ -10,12 +10,10 @@ const ShieldIcon = () => (<svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
 const TruckIcon = () => (<svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" /></svg>);
 const LockIcon = () => (<svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>);
 const StarIcon = ({ filled, size = "4" }) => (
-    <svg fill={filled ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-${size} h-${size} text-black`}>
+    <svg fill={filled ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-${size} h-${size} text-black dark:text-white transition-colors`}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
     </svg>
 );
-
-const AVAILABLE_SIZES = ["100ML", "30ML", "3ML"];
 
 export default function ProductDetails({ addToCart }) {
     const { id } = useParams();
@@ -109,8 +107,8 @@ export default function ProductDetails({ addToCart }) {
 
     const slideIn = { hidden: { x: -20, opacity: 0 }, visible: { x: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } } };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center text-[10px] uppercase font-bold tracking-widest text-gray-400">Loading...</div>;
-    if (!product) return <div className="min-h-screen flex items-center justify-center text-[10px] uppercase font-bold tracking-widest text-gray-400">Fragrance not found.</div>;
+    if (loading) return <div className="min-h-screen bg-white dark:bg-[#0a0a0a] flex items-center justify-center text-[10px] uppercase font-bold tracking-widest text-gray-400">Loading...</div>;
+    if (!product) return <div className="min-h-screen bg-white dark:bg-[#0a0a0a] flex items-center justify-center text-[10px] uppercase font-bold tracking-widest text-gray-400">Fragrance not found.</div>;
 
     const avgRating = product.reviews?.length > 0 
         ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length 
@@ -126,7 +124,7 @@ export default function ProductDetails({ addToCart }) {
     const has3ml = product.price3ml !== null && product.price3ml !== undefined;
 
     return (
-        <div className="min-h-screen bg-white pt-28 pb-20 font-sans text-black overflow-x-hidden">
+        <div className="min-h-screen bg-white dark:bg-[#0a0a0a] pt-28 pb-20 font-sans transition-colors duration-300 overflow-x-hidden">
             <Helmet title={`${product.name} | ER Parfums`} />
             
             <div className="max-w-[1600px] mx-auto px-6 md:px-10 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
@@ -140,16 +138,16 @@ export default function ProductDetails({ addToCart }) {
                                     key={index} 
                                     src={imgUrl} 
                                     onClick={() => setActiveImage(imgUrl)} 
-                                    className={`w-full aspect-[3/4] object-cover cursor-pointer border transition-all ${activeImage === imgUrl ? 'border-black opacity-100' : 'border-gray-200 opacity-60 hover:opacity-100'}`}
+                                    className={`w-full aspect-[3/4] object-cover cursor-pointer border transition-all ${activeImage === imgUrl ? 'border-black dark:border-white opacity-100' : 'border-gray-200 dark:border-gray-800 opacity-60 hover:opacity-100'}`}
                                     alt={`Thumbnail ${index + 1}`}
                                 />
                             ))
                         ) : (
-                            <img src={activeImage} className="w-full aspect-[3/4] object-cover border border-black cursor-pointer" alt="Thumbnail" />
+                            <img src={activeImage} className="w-full aspect-[3/4] object-cover border border-black dark:border-white cursor-pointer" alt="Thumbnail" />
                         )}
                     </div>
-                    <div className="col-span-10 bg-gray-50 h-full relative">
-                        <img src={activeImage} className="w-full h-full object-contain object-top absolute inset-0 mix-blend-multiply" alt={product.name}/>
+                    <div className="col-span-10 bg-gray-50 dark:bg-[#111] h-full relative transition-colors duration-300">
+                        <img src={activeImage} className="w-full h-full object-contain object-top absolute inset-0 mix-blend-multiply dark:mix-blend-normal" alt={product.name}/>
                     </div>
                 </motion.div>
 
@@ -157,28 +155,27 @@ export default function ProductDetails({ addToCart }) {
                 <motion.div initial="hidden" animate="visible" variants={slideIn} transition={{ delay: 0.2 }} className="lg:col-span-5 space-y-10 lg:sticky lg:top-32">
                     <div>
                         <p className="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-gray-400 mb-3">{product.category} • {scentFamily}</p>
-                        <h1 className="text-3xl md:text-4xl font-normal tracking-[0.15em] uppercase logo-font mb-4 text-black">{product.name}</h1>
+                        <h1 className="text-3xl md:text-4xl font-normal tracking-[0.15em] uppercase logo-font mb-4 text-black dark:text-white transition-colors">{product.name}</h1>
                         <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-6">Inspired by the world's most recognized fragrances</p>
                         
-                        <div className="flex items-center gap-6 border-b border-gray-100 pb-8 mb-8">
-                            <p className="text-3xl font-bold">₱{currentPrice?.toLocaleString() || '---'}</p>
-                            <div className="flex items-center gap-1.5 border border-gray-100 bg-gray-50 px-3 py-1.5 rounded-full">
+                        <div className="flex items-center gap-6 border-b border-gray-100 dark:border-gray-800 pb-8 mb-8 transition-colors">
+                            <p className="text-3xl font-bold text-black dark:text-white transition-colors">₱{currentPrice?.toLocaleString() || '---'}</p>
+                            <div className="flex items-center gap-1.5 border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#111] px-3 py-1.5 rounded-full transition-colors">
                                 {[1,2,3,4,5].map(star => <StarIcon key={star} filled={star <= Math.round(avgRating)} />)}
-                                <span className="text-xs font-bold ml-1 text-black">{product.reviews?.length || 0} Reviews</span>
+                                <span className="text-xs font-bold ml-1 text-black dark:text-white transition-colors">{product.reviews?.length || 0} Reviews</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* conditionally render description and details to prevent empty gaps */}
                     {(product.description?.trim() || product.details?.trim()) && (
-                        <div className="text-sm text-gray-700 leading-loose space-y-6">
+                        <div className="text-sm text-gray-700 dark:text-gray-300 leading-loose space-y-6 transition-colors">
                             {product.description?.trim() && (
                                 <p>{product.description}</p>
                             )}
                             
                             {/* SHOPEE STYLE BULLET POINTS */}
                             {product.details?.trim() && (
-                                <div className="pt-4 mt-4 border-t border-gray-100">
+                                <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
                                     <ul className="space-y-2 text-xs">
                                         {product.details.split('\n').map((point, index) => {
                                             if (!point.trim()) return null;
@@ -195,20 +192,20 @@ export default function ProductDetails({ addToCart }) {
                         </div>
                     )}
 
-                    <div className="bg-gray-50 border border-gray-100 p-8 space-y-6">
-                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-black border-b border-gray-200 pb-4">Olfactory Notes</h3>
+                    <div className="bg-gray-50 dark:bg-[#111] border border-gray-100 dark:border-gray-800 p-8 space-y-6 transition-colors duration-300">
+                        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-black dark:text-white border-b border-gray-200 dark:border-gray-800 pb-4 transition-colors">Olfactory Notes</h3>
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
                                 <p className="text-[9px] uppercase tracking-widest text-gray-400 font-bold mb-2">Top</p>
-                                <p className="text-xs font-serif text-gray-900 leading-relaxed">{topNotes}</p>
+                                <p className="text-xs font-serif text-gray-900 dark:text-gray-200 leading-relaxed">{topNotes}</p>
                             </div>
                             <div>
                                 <p className="text-[9px] uppercase tracking-widest text-gray-400 font-bold mb-2">Heart</p>
-                                <p className="text-xs font-serif text-gray-900 leading-relaxed">{heartNotes}</p>
+                                <p className="text-xs font-serif text-gray-900 dark:text-gray-200 leading-relaxed">{heartNotes}</p>
                             </div>
                             <div>
                                 <p className="text-[9px] uppercase tracking-widest text-gray-400 font-bold mb-2">Base</p>
-                                <p className="text-xs font-serif text-gray-900 leading-relaxed">{baseNotes}</p>
+                                <p className="text-xs font-serif text-gray-900 dark:text-gray-200 leading-relaxed">{baseNotes}</p>
                             </div>
                         </div>
                     </div>
@@ -216,7 +213,7 @@ export default function ProductDetails({ addToCart }) {
                     {/* --- DYNAMIC SIZE SELECTION --- */}
                     <div className="space-y-6 pt-6">
                         <div className="flex justify-between items-center mb-4">
-                            <p className="font-semibold uppercase tracking-widest text-black text-[11px]">Select Volume</p>
+                            <p className="font-semibold uppercase tracking-widest text-black dark:text-white text-[11px] transition-colors">Select Volume</p>
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                                 {currentStock > 0 ? `${currentStock} in stock` : 'Out of Stock'}
                             </p>
@@ -226,39 +223,39 @@ export default function ProductDetails({ addToCart }) {
                             <button 
                                 onClick={() => setSelectedSize('100ML')} 
                                 disabled={!has100ml}
-                                className={`flex-1 py-4 border text-[11px] font-bold tracking-widest uppercase transition ${selectedSize === '100ML' ? 'border-black bg-black text-white' : has100ml ? 'border-gray-200 text-gray-500 hover:border-black cursor-pointer' : 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed opacity-50'}`}
+                                className={`flex-1 py-4 border text-[11px] font-bold tracking-widest uppercase transition-colors ${selectedSize === '100ML' ? 'border-black bg-black text-white dark:bg-white dark:border-white dark:text-black' : has100ml ? 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-black dark:hover:border-white cursor-pointer' : 'border-gray-100 dark:border-gray-900 bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50'}`}
                             >
                                 100 ML {!has100ml && <span className="text-[9px] block mt-1">(N/A)</span>}
                             </button>
                             <button 
                                 onClick={() => setSelectedSize('30ML')} 
                                 disabled={!has30ml}
-                                className={`flex-1 py-4 border text-[11px] font-bold tracking-widest uppercase transition ${selectedSize === '30ML' ? 'border-black bg-black text-white' : has30ml ? 'border-gray-200 text-gray-500 hover:border-black cursor-pointer' : 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed opacity-50'}`}
+                                className={`flex-1 py-4 border text-[11px] font-bold tracking-widest uppercase transition-colors ${selectedSize === '30ML' ? 'border-black bg-black text-white dark:bg-white dark:border-white dark:text-black' : has30ml ? 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-black dark:hover:border-white cursor-pointer' : 'border-gray-100 dark:border-gray-900 bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50'}`}
                             >
                                 30 ML {!has30ml && <span className="text-[9px] block mt-1">(N/A)</span>}
                             </button>
                             <button 
                                 onClick={() => setSelectedSize('3ML')} 
                                 disabled={!has3ml}
-                                className={`flex-1 py-4 border text-[11px] font-bold tracking-widest uppercase transition ${selectedSize === '3ML' ? 'border-black bg-black text-white' : has3ml ? 'border-gray-200 text-gray-500 hover:border-black cursor-pointer' : 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed opacity-50'}`}
+                                className={`flex-1 py-4 border text-[11px] font-bold tracking-widest uppercase transition-colors ${selectedSize === '3ML' ? 'border-black bg-black text-white dark:bg-white dark:border-white dark:text-black' : has3ml ? 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-black dark:hover:border-white cursor-pointer' : 'border-gray-100 dark:border-gray-900 bg-gray-50 dark:bg-gray-900 text-gray-300 dark:text-gray-600 cursor-not-allowed opacity-50'}`}
                             >
                                 3 ML {!has3ml && <span className="text-[9px] block mt-1">(N/A)</span>}
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-6 pt-10 mt-10 border-t border-gray-100">
-                        <div className="flex items-center border border-gray-300 rounded-sm">
-                            <button onClick={()=>setQuantity(q=>Math.max(1,q-1))} className="px-6 py-4 text-gray-500 hover:text-black transition">−</button>
-                            <span className="px-6 py-4 text-sm font-bold w-16 text-center text-black border-l border-r border-gray-200">{quantity}</span>
-                            <button onClick={()=>setQuantity(q=>q+1)} className="px-6 py-4 text-gray-500 hover:text-black transition">+</button>
+                    <div className="flex flex-col sm:flex-row gap-6 pt-10 mt-10 border-t border-gray-100 dark:border-gray-800 transition-colors">
+                        <div className="flex items-center border border-gray-300 dark:border-gray-700 rounded-sm transition-colors">
+                            <button onClick={()=>setQuantity(q=>Math.max(1,q-1))} className="px-6 py-4 text-gray-500 hover:text-black dark:hover:text-white transition-colors">−</button>
+                            <span className="px-6 py-4 text-sm font-bold w-16 text-center text-black dark:text-white border-l border-r border-gray-200 dark:border-gray-700 transition-colors">{quantity}</span>
+                            <button onClick={()=>setQuantity(q=>q+1)} className="px-6 py-4 text-gray-500 hover:text-black dark:hover:text-white transition-colors">+</button>
                         </div>
-                        <button onClick={handleAddToCart} disabled={currentStock < 1 || !currentPrice} className="w-full bg-black text-white px-10 py-5 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition shadow-sm cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap">
+                        <button onClick={handleAddToCart} disabled={currentStock < 1 || !currentPrice} className="w-full bg-black dark:bg-white text-white dark:text-black px-10 py-5 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm cursor-pointer disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed whitespace-nowrap">
                             {(currentStock < 1 || !currentPrice) ? 'Unavailable' : `Add to Bag | ${selectedSize} (₱${currentPrice?.toLocaleString()})`}
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
+                    <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100 dark:border-gray-800 text-black dark:text-white transition-colors">
                         <div className="flex flex-col items-center text-center gap-3">
                             <ShieldIcon />
                             <span className="text-[9px] uppercase tracking-widest text-gray-500 font-bold">FDA Approved<br/>Guarantee</span>
@@ -276,34 +273,34 @@ export default function ProductDetails({ addToCart }) {
             </div>
 
             {/* --- REVIEWS SECTION --- */}
-            <div className="max-w-[1600px] mx-auto px-6 md:px-10 py-32 mt-32 border-t border-gray-100 bg-gray-50 rounded-sm">
-                <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-gray-200 pb-10 mb-16">
-                    <h2 className="text-2xl md:text-3xl font-normal tracking-[0.15em] uppercase logo-font text-black">Fragrance Reviews</h2>
-                    <div className="flex items-center gap-3 border border-gray-100 bg-white px-5 py-3 rounded-full">
+            <div className="max-w-[1600px] mx-auto px-6 md:px-10 py-32 mt-32 border-t border-gray-100 dark:border-gray-900 bg-gray-50 dark:bg-[#111] rounded-sm transition-colors duration-300">
+                <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-gray-200 dark:border-gray-800 pb-10 mb-16 transition-colors">
+                    <h2 className="text-2xl md:text-3xl font-normal tracking-[0.15em] uppercase logo-font text-black dark:text-white transition-colors">Fragrance Reviews</h2>
+                    <div className="flex items-center gap-3 border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0a0a0a] px-5 py-3 rounded-full transition-colors">
                         {[1,2,3,4,5].map(star => <StarIcon key={star} filled={star <= Math.round(avgRating)} />)}
-                        <span className="text-sm font-bold text-black">{avgRating.toFixed(1)} out of 5</span>
+                        <span className="text-sm font-bold text-black dark:text-white">{avgRating.toFixed(1)} out of 5</span>
                     </div>
                 </header>
                 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                    <div className="lg:col-span-5 space-y-10 lg:sticky lg:top-32 bg-white p-10 border border-gray-100 shadow-sm">
+                    <div className="lg:col-span-5 space-y-10 lg:sticky lg:top-32 bg-white dark:bg-[#0a0a0a] p-10 border border-gray-100 dark:border-gray-800 shadow-sm transition-colors duration-300">
                         
                         {canReview ? (
                             <form onSubmit={handleReviewSubmit} className="space-y-8">
-                                <h3 className="text-[11px] font-bold uppercase tracking-widest text-black mb-1">Share Your Experience</h3>
+                                <h3 className="text-[11px] font-bold uppercase tracking-widest text-black dark:text-white mb-1 transition-colors">Share Your Experience</h3>
                                 
                                 <AnimatePresence>
                                     {purchaseError && (
-                                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex justify-between items-start bg-red-50 border border-red-100 p-4 text-red-700 text-xs leading-relaxed uppercase tracking-widest">
+                                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex justify-between items-start bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 p-4 text-red-700 dark:text-red-400 text-xs leading-relaxed uppercase tracking-widest transition-colors">
                                             You can only leave a review after your order is marked as COMPLETED. If you've purchased it, please check your purchase history.
-                                            <button type="button" onClick={()=>setPurchaseError(false)} className="text-red-400 hover:text-red-700 ml-4"><CloseIcon/></button>
+                                            <button type="button" onClick={()=>setPurchaseError(false)} className="text-red-400 hover:text-red-700 dark:hover:text-red-300 ml-4"><CloseIcon/></button>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
                                 
                                 <div>
                                     <label className="text-[10px] uppercase font-bold tracking-widest text-gray-500 block mb-4">Rating</label>
-                                    <div className="flex gap-1.5 border border-gray-200 bg-gray-50 p-3 rounded-full justify-center w-48">
+                                    <div className="flex gap-1.5 border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#111] p-3 rounded-full justify-center w-48 transition-colors">
                                         {[1,2,3,4,5].map(star => <button key={star} type="button" onClick={()=>setNewReview({...newReview, rating: star})} className="cursor-pointer">
                                             <StarIcon filled={star <= newReview.rating} size="5" />
                                         </button>)}
@@ -312,41 +309,41 @@ export default function ProductDetails({ addToCart }) {
                                 
                                 <div>
                                     <label className="text-[10px] uppercase font-bold tracking-widest text-gray-500 block mb-3">Comment (Optional)</label>
-                                    <textarea required rows="5" value={newReview.comment} onChange={(e)=>setNewReview({...newReview, comment: e.target.value})} className="w-full border border-gray-300 p-4 text-sm focus:border-black transition resize-none outline-none"/>
+                                    <textarea required rows="5" value={newReview.comment} onChange={(e)=>setNewReview({...newReview, comment: e.target.value})} className="w-full border border-gray-300 dark:border-gray-700 bg-transparent text-black dark:text-white p-4 text-sm focus:border-black dark:focus:border-white transition-colors resize-none outline-none"/>
                                 </div>
                                 
-                                <button type="submit" disabled={submitLoading} className="w-full bg-black text-white px-10 py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition shadow-sm cursor-pointer disabled:bg-gray-400">
+                                <button type="submit" disabled={submitLoading} className="w-full bg-black dark:bg-white text-white dark:text-black px-10 py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm cursor-pointer disabled:bg-gray-400 dark:disabled:bg-gray-600">
                                     {submitLoading ? 'Submitting...' : 'Post Review'}
                                 </button>
                             </form>
                         ) : (
-                            <div className="p-10 text-center bg-gray-50 border border-gray-200 shadow-sm">
+                            <div className="p-10 text-center bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-300 text-black dark:text-white">
                                 <ShieldIcon className="w-8 h-8 mx-auto text-gray-400 mb-4" />
-                                <h3 className="text-[11px] font-bold uppercase tracking-widest text-black mb-2">Verified Buyers Only</h3>
+                                <h3 className="text-[11px] font-bold uppercase tracking-widest text-black dark:text-white mb-2 transition-colors">Verified Buyers Only</h3>
                                 <p className="text-xs text-gray-500 leading-relaxed">
                                     You must purchase and receive this fragrance before leaving a review.
                                 </p>
                             </div>
                         )}
 
-                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-12 pt-8 border-t border-gray-100 text-center">Reviews require manual verification.</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-12 pt-8 border-t border-gray-100 dark:border-gray-800 text-center transition-colors">Reviews require manual verification.</p>
                     </div>
 
                     <div className="lg:col-span-7 space-y-12">
                         {(!product.reviews || product.reviews.length === 0) ? (
-                             <div className="flex items-center justify-center text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold py-24 bg-gray-50 border border-gray-200 shadow-sm">
+                             <div className="flex items-center justify-center text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold py-24 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-800 shadow-sm transition-colors duration-300">
                                  No reviews yet. Be the first to share your scent.
                              </div>
                         ) : (
                             product.reviews.map(review => (
-                                <div key={review.id} className="border-b border-gray-100 pb-8">
+                                <div key={review.id} className="border-b border-gray-100 dark:border-gray-800 pb-8 transition-colors">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden">
+                                            <div className="w-10 h-10 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden text-black dark:text-white transition-colors">
                                                 {review.user?.avatar ? <img src={review.user.avatar} className="w-full h-full object-cover" /> : review.user?.fullname?.[0] || 'U'}
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold uppercase tracking-widest">{review.user?.fullname || 'Anonymous'}</p>
+                                                <p className="text-xs font-bold uppercase tracking-widest text-black dark:text-white transition-colors">{review.user?.fullname || 'Anonymous'}</p>
                                                 <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
                                                     <ShieldIcon /> Verified Buyer
                                                 </p>
@@ -356,7 +353,7 @@ export default function ProductDetails({ addToCart }) {
                                             {[1,2,3,4,5].map(star => <StarIcon key={star} filled={star <= review.rating} />)}
                                         </div>
                                     </div>
-                                    <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed transition-colors">{review.comment}</p>
                                     <p className="text-[9px] text-gray-400 uppercase tracking-widest mt-4">{new Date(review.createdAt).toLocaleDateString()}</p>
                                 </div>
                             ))

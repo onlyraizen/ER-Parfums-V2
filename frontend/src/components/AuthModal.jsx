@@ -15,13 +15,11 @@ export default function AuthModal({ isOpen, onClose }) {
     const recaptchaRef = useRef(null);
     const [submitLoading, setSubmitLoading] = useState(false);
 
-    // --- ERRORS & PASSWORD STRENGTH ---
     const [error, setError] = useState(''); 
     const [regError, setRegError] = useState(''); 
     const [passwordChecks, setPasswordChecks] = useState({ length: false, caps: false, lower: false, number: false });
     const [passwordStrength, setPasswordStrength] = useState('Weak');
 
-    // --- OTP LOGIC ---
     const regOtpRefs = useRef([]);
     const forgotOtpRefs = useRef([]);
     const [regOtp, setRegOtp] = useState(['', '', '', '', '', '']);
@@ -58,7 +56,6 @@ export default function AuthModal({ isOpen, onClose }) {
     const isPasswordValid = Object.values(passwordChecks).every(Boolean) && formData.password === formData.confirmPassword;
     const resetFormState = () => { recaptchaRef.current?.reset(); setSubmitLoading(false); };
 
-    // --- OTP CONTIGUOUS INPUT HANDLERS ---
     const handleOtpChange = (element, index, stateUpdater, refs) => {
         const value = element.value.replace(/[^0-9]/g, ''); 
         if (!value) return;
@@ -79,7 +76,6 @@ export default function AuthModal({ isOpen, onClose }) {
         });
     };
 
-    // --- AUTHENTICATION ENDPOINTS ---
     const handleLogin = async (e) => {
         e.preventDefault();
         setSubmitLoading(true); setError('');
@@ -92,7 +88,6 @@ export default function AuthModal({ isOpen, onClose }) {
             window.location.reload();
         } catch (err) { 
             setError(err.response?.data?.message || "Invalid credentials."); 
-            // SWEEP INPUTS ON FAILURE
             setFormData({ fullname: '', email: '', password: '', confirmPassword: '' });
             resetFormState(); 
         }
@@ -153,7 +148,7 @@ export default function AuthModal({ isOpen, onClose }) {
         const combinedOtp = forgotOtp.join('');
         if (combinedOtp.length < 6) { setError("Please enter the full 6-digit code."); return; }
         setError('');
-        setStep(3); // Move to the actual password reset step
+        setStep(3);
     }
 
     const handleResetPassword = async (e) => { 
@@ -167,20 +162,17 @@ export default function AuthModal({ isOpen, onClose }) {
         } catch (err) { setError(err.response?.data?.message || "Reset failed."); setSubmitLoading(false); } 
     };
 
-    //if (!isOpen) return null;
-
-    // Extracted out to purely render elements instead of defining components inside render
     const renderPasswordRequirements = () => (
-        <div className="pt-3 pb-2 space-y-1.5 border-t border-gray-100 mt-4">
-            <p className="text-[11px] font-bold uppercase tracking-widest mb-2 flex justify-between items-center">
+        <div className="pt-3 pb-2 space-y-1.5 border-t border-gray-100 dark:border-gray-800 mt-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest mb-2 flex justify-between items-center text-black dark:text-white transition-colors">
                 <span>Password Strength:</span>
                 <span className={`${passwordStrength === 'Weak' ? 'text-red-600' : (passwordStrength === 'Medium' ? 'text-yellow-600' : 'text-green-600')}`}>{passwordStrength}</span>
             </p>
-            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.length ? 'text-green-600 font-medium' : 'text-gray-400'}`}>✓ At least 8 characters</p>
-            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.caps ? 'text-green-600 font-medium' : 'text-gray-400'}`}>✓ At least one uppercase letter</p>
-            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.lower ? 'text-green-600 font-medium' : 'text-gray-400'}`}>✓ At least one lowercase letter</p>
-            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.number ? 'text-green-600 font-medium' : 'text-gray-400'}`}>✓ At least one number</p>
-            <p className={`text-[10px] uppercase tracking-wider ${formData.confirmPassword && formData.password === formData.confirmPassword ? 'text-green-600 font-medium' : 'text-gray-400'}`}>✓ Passwords match</p>
+            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.length ? 'text-green-600 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>✓ At least 8 characters</p>
+            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.caps ? 'text-green-600 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>✓ At least one uppercase letter</p>
+            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.lower ? 'text-green-600 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>✓ At least one lowercase letter</p>
+            <p className={`text-[10px] uppercase tracking-wider ${passwordChecks.number ? 'text-green-600 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>✓ At least one number</p>
+            <p className={`text-[10px] uppercase tracking-wider ${formData.confirmPassword && formData.password === formData.confirmPassword ? 'text-green-600 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>✓ Passwords match</p>
         </div>
     );
 
@@ -191,28 +183,28 @@ export default function AuthModal({ isOpen, onClose }) {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></motion.div>
                 
                 <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }} transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-                    className="bg-white w-full max-w-lg p-12 md:p-16 relative z-10 shadow-2xl flex flex-col"
+                    className="bg-white dark:bg-[#111] w-full max-w-lg p-12 md:p-16 relative z-10 shadow-2xl flex flex-col transition-colors duration-300 border border-transparent dark:border-gray-800"
                 >
-                    <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-black transition-colors"><CloseIcon /></button>
+                    <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-black dark:hover:text-white transition-colors"><CloseIcon /></button>
                     
-                    <h2 className="text-2xl font-bold uppercase tracking-[0.15em] mb-10 text-center">{view === 'forgot' ? 'Reset Password' : (view === 'register' ? 'Create Account' : 'Login')}</h2>
+                    <h2 className="text-2xl font-bold uppercase tracking-[0.15em] mb-10 text-center text-black dark:text-white transition-colors">{view === 'forgot' ? 'Reset Password' : (view === 'register' ? 'Create Account' : 'Login')}</h2>
                     
                     {/* LOGIN FORM */}
                     {view === 'login' && (
                         <form onSubmit={handleLogin} className="space-y-6">
                             {error && <p className="text-xs bg-red-50 text-red-600 border border-red-100 p-3 font-bold uppercase tracking-widest text-center">{error}</p>}
-                            <input type="email" name="email" value={formData.email} placeholder="Email" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors" />
+                            <input type="email" name="email" value={formData.email} placeholder="Email" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors bg-transparent text-black dark:text-white placeholder:text-gray-400" />
                             <div className="relative">
-                                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="Password" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors pr-10" />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />}</button>
+                                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="Password" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors pr-10 bg-transparent text-black dark:text-white placeholder:text-gray-400" />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black dark:hover:text-white transition-colors"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />}</button>
                             </div>
                             <div className="flex justify-center my-6"><ReCAPTCHA ref={recaptchaRef} sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} /></div>
-                            <button type="submit" disabled={submitLoading} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300">
+                            <button type="submit" disabled={submitLoading} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:bg-gray-300 dark:disabled:bg-gray-700">
                                 {submitLoading ? 'Authenticating...' : 'Sign In'}
                             </button>
-                            <div className="text-center space-y-4 pt-4 border-t border-gray-100">
-                                <button type="button" onClick={() => { setView('forgot'); setStep(1); }} className="text-[10px] text-gray-500 uppercase tracking-widest hover:text-black transition block w-full">Forgot Password?</button>
-                                <button type="button" onClick={() => { setView('register'); setStep(1); }} className="text-[10px] text-gray-500 uppercase tracking-widest hover:text-black transition block w-full">Create an Account</button>
+                            <div className="text-center space-y-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <button type="button" onClick={() => { setView('forgot'); setStep(1); }} className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition block w-full">Forgot Password?</button>
+                                <button type="button" onClick={() => { setView('register'); setStep(1); }} className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-black dark:hover:text-white transition block w-full">Create an Account</button>
                             </div>
                         </form>
                     )}
@@ -221,21 +213,21 @@ export default function AuthModal({ isOpen, onClose }) {
                     {view === 'register' && step === 1 && (
                         <form onSubmit={handleSendRegisterOtp} className="space-y-6">
                             {regError && <p className="text-xs bg-red-50 text-red-600 border border-red-100 p-3 font-bold uppercase tracking-widest text-center">{regError}</p>}
-                            <input type="text" name="fullname" value={formData.fullname} placeholder="Full Name" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors" />
-                            <input type="email" name="email" value={formData.email} placeholder="Email" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors" />
+                            <input type="text" name="fullname" value={formData.fullname} placeholder="Full Name" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors bg-transparent text-black dark:text-white placeholder:text-gray-400" />
+                            <input type="email" name="email" value={formData.email} placeholder="Email" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors bg-transparent text-black dark:text-white placeholder:text-gray-400" />
                             <div className="relative">
-                                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="Password" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors pr-10" />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />} </button>
+                                <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="Password" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors pr-10 bg-transparent text-black dark:text-white placeholder:text-gray-400" />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black dark:hover:text-white transition-colors"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />} </button>
                             </div>
                             <div className="relative">
-                                <input type={showPassword ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} placeholder="Confirm Password" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors pr-10" />
+                                <input type={showPassword ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} placeholder="Confirm Password" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors pr-10 bg-transparent text-black dark:text-white placeholder:text-gray-400" />
                                 {formData.password && renderPasswordRequirements()}
                             </div>
                             <div className="flex justify-center my-6"><ReCAPTCHA ref={recaptchaRef} sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} /></div>
-                            <button type="submit" disabled={submitLoading || !isPasswordValid} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300">
+                            <button type="submit" disabled={submitLoading || !isPasswordValid} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:bg-gray-300 dark:disabled:bg-gray-700">
                                 {submitLoading ? 'Verifying...' : 'Register'}
                             </button>
-                            <button type="button" onClick={() => setView('login')} className="text-[10px] text-gray-500 uppercase tracking-widest block w-full text-center mt-4 hover:text-black transition">Back to Login</button>
+                            <button type="button" onClick={() => setView('login')} className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest block w-full text-center mt-4 hover:text-black dark:hover:text-white transition">Back to Login</button>
                         </form>
                     )}
 
@@ -243,7 +235,7 @@ export default function AuthModal({ isOpen, onClose }) {
                     {view === 'register' && step === 2 && (
                         <form onSubmit={handleRegister} className="space-y-6">
                             {regError && <p className="text-xs bg-red-50 text-red-600 border border-red-100 p-3 font-bold uppercase tracking-widest text-center">{regError}</p>}
-                            <p className="text-xs text-gray-500 text-center leading-relaxed">Enter the 6-digit code sent to <br/><span className="font-bold text-black">{formData.email}</span></p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed">Enter the 6-digit code sent to <br/><span className="font-bold text-black dark:text-white">{formData.email}</span></p>
                             
                             <div className="flex gap-2 justify-center mb-8">
                                 {regOtp.map((digit, index) => (
@@ -252,16 +244,16 @@ export default function AuthModal({ isOpen, onClose }) {
                                         ref={el => regOtpRefs.current[index] = el}
                                         onChange={(e) => handleOtpChange(e.target, index, setRegOtp, regOtpRefs)}
                                         onKeyDown={(e) => { if (e.key === 'Backspace') handleOtpBackspace(e.target, index, setRegOtp, regOtpRefs); }}
-                                        className="w-12 h-14 border border-gray-300 text-center text-2xl font-bold focus:border-black outline-none transition rounded-sm"
+                                        className="w-12 h-14 border border-gray-300 dark:border-gray-700 bg-transparent text-center text-2xl font-bold text-black dark:text-white focus:border-black dark:focus:border-white outline-none transition-colors rounded-sm"
                                     />
                                 ))}
                             </div>
                             
-                            <button type="submit" disabled={submitLoading} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300">
+                            <button type="submit" disabled={submitLoading} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:bg-gray-300 dark:disabled:bg-gray-700">
                                 {submitLoading ? 'Registering...' : 'REGISTER'}
                             </button>
                             <div className="text-center pt-2">
-                                <button type="button" onClick={handleResendOtp} disabled={resendTimer > 0} className={`text-[10px] uppercase tracking-widest transition ${resendTimer > 0 ? 'text-gray-300' : 'text-gray-500 hover:text-black underline'}`}>
+                                <button type="button" onClick={handleResendOtp} disabled={resendTimer > 0} className={`text-[10px] uppercase tracking-widest transition ${resendTimer > 0 ? 'text-gray-300 dark:text-gray-700' : 'text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white underline'}`}>
                                     {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : 'Resend Code'}
                                 </button>
                             </div>
@@ -272,13 +264,13 @@ export default function AuthModal({ isOpen, onClose }) {
                     {view === 'forgot' && step === 1 && (
                         <form onSubmit={handleSendForgotOtp} className="space-y-6">
                             {error && <p className="text-xs bg-red-50 text-red-600 border border-red-100 p-3 font-bold uppercase tracking-widest text-center">{error}</p>}
-                            <p className="text-xs text-gray-500 text-center leading-relaxed">Enter your registered email address to receive a <br/>password reset code.</p>
-                            <input type="email" name="email" value={formData.email} placeholder="Email" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors" />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed">Enter your registered email address to receive a <br/>password reset code.</p>
+                            <input type="email" name="email" value={formData.email} placeholder="Email" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors bg-transparent text-black dark:text-white placeholder:text-gray-400" />
                             <div className="flex justify-center my-6"><ReCAPTCHA ref={recaptchaRef} sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} /></div>
-                            <button type="submit" disabled={submitLoading} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300">
+                            <button type="submit" disabled={submitLoading} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:bg-gray-300 dark:disabled:bg-gray-700">
                                 {submitLoading ? 'Sending...' : 'Send Reset Code'}
                             </button>
-                            <button type="button" onClick={() => setView('login')} className="text-[10px] text-gray-500 uppercase tracking-widest block w-full text-center mt-4 hover:text-black transition">Cancel</button>
+                            <button type="button" onClick={() => setView('login')} className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-widest block w-full text-center mt-4 hover:text-black dark:hover:text-white transition">Cancel</button>
                         </form>
                     )}
 
@@ -286,7 +278,7 @@ export default function AuthModal({ isOpen, onClose }) {
                     {view === 'forgot' && step === 2 && (
                         <form onSubmit={handleVerifyForgotOtp} className="space-y-6">
                             {error && <p className="text-xs bg-red-50 text-red-600 border border-red-100 p-3 font-bold uppercase tracking-widest text-center">{error}</p>}
-                            <p className="text-xs text-gray-500 text-center leading-relaxed mb-6">Enter the 6-digit code sent to your email.</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed mb-6">Enter the 6-digit code sent to your email.</p>
                             
                             <div className="flex gap-2 justify-center mb-8">
                                 {forgotOtp.map((digit, index) => (
@@ -295,12 +287,12 @@ export default function AuthModal({ isOpen, onClose }) {
                                         ref={el => forgotOtpRefs.current[index] = el}
                                         onChange={(e) => handleOtpChange(e.target, index, setForgotOtp, forgotOtpRefs)}
                                         onKeyDown={(e) => { if (e.key === 'Backspace') handleOtpBackspace(e.target, index, setForgotOtp, forgotOtpRefs); }}
-                                        className="w-12 h-14 border border-gray-300 text-center text-2xl font-bold focus:border-black outline-none transition rounded-sm"
+                                        className="w-12 h-14 border border-gray-300 dark:border-gray-700 bg-transparent text-center text-2xl font-bold text-black dark:text-white focus:border-black dark:focus:border-white outline-none transition-colors rounded-sm"
                                     />
                                 ))}
                             </div>
 
-                            <button type="submit" disabled={forgotOtp.join('').length < 6} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300 mt-6">
+                            <button type="submit" disabled={forgotOtp.join('').length < 6} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:bg-gray-300 dark:disabled:bg-gray-700 mt-6">
                                 Verify Code
                             </button>
                         </form>
@@ -310,20 +302,20 @@ export default function AuthModal({ isOpen, onClose }) {
                     {view === 'forgot' && step === 3 && (
                         <form onSubmit={handleResetPassword} className="space-y-6">
                             {error && <p className="text-xs bg-red-50 text-red-600 border border-red-100 p-3 font-bold uppercase tracking-widest text-center">{error}</p>}
-                            <p className="text-xs text-gray-500 text-center leading-relaxed mb-6">Create a new secure password.</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 text-center leading-relaxed mb-6">Create a new secure password.</p>
                             
                             <div className="pt-4 space-y-6">
                                 <div className="relative">
-                                    <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="New Password" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors pr-10" />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />} </button>
+                                    <input type={showPassword ? "text" : "password"} name="password" value={formData.password} placeholder="New Password" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors pr-10 bg-transparent text-black dark:text-white placeholder:text-gray-400" />
+                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 top-3 text-gray-400 hover:text-black dark:hover:text-white transition-colors"> {showPassword ? <EyeSlashIcon /> : <EyeIcon />} </button>
                                 </div>
                                 <div className="relative">
-                                    <input type={showPassword ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} placeholder="Confirm New Password" required onChange={handleChange} className="w-full border-b border-gray-300 py-3 text-sm outline-none focus:border-black transition-colors pr-10" />
+                                    <input type={showPassword ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} placeholder="Confirm New Password" required onChange={handleChange} className="w-full border-b border-gray-300 dark:border-gray-700 py-3 text-sm outline-none focus:border-black dark:focus:border-white transition-colors pr-10 bg-transparent text-black dark:text-white placeholder:text-gray-400" />
                                     {formData.password && renderPasswordRequirements()}
                                 </div>
                             </div>
 
-                            <button type="submit" disabled={submitLoading || !isPasswordValid} className="w-full bg-black text-white py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 transition disabled:bg-gray-300 mt-6">
+                            <button type="submit" disabled={submitLoading || !isPasswordValid} className="w-full bg-black dark:bg-white text-white dark:text-black py-4 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-gray-800 dark:hover:bg-gray-200 transition disabled:bg-gray-300 dark:disabled:bg-gray-700 mt-6">
                                 {submitLoading ? 'Resetting...' : 'Save New Password'}
                             </button>
                         </form>
