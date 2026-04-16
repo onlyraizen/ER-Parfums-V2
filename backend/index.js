@@ -3,7 +3,6 @@ const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -13,7 +12,6 @@ const rateLimit = require('express-rate-limit');
 const dns = require('dns');
 
 // 🔥 GLOBAL IPv4 OVERRIDE 🔥
-// Forces Node to use stable IPv4 routes for EVERYTHING.
 dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
@@ -57,23 +55,24 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'er_parfums_super_secret_key_2026';
 
-// FIXED: Added extreme strict timeouts to prevent infinite hanging
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: { 
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS 
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    family: 4,
-    connectionTimeout: 10000, // Fails fast if blocked
-    greetingTimeout: 10000,
-    socketTimeout: 10000
-});
+// 🔥 PRODUCTION HTTP EMAIL API (Bypasses Railway Port Blocks) 🔥
+const sendProductionEmail = async (toEmail, subject, htmlContent) => {
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) throw new Error("BREVO_API_KEY is missing from environment variables.");
+
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+        sender: { name: "ER Parfums", email: process.env.EMAIL_USER }, 
+        to: [{ email: toEmail }],
+        subject: subject,
+        htmlContent: htmlContent
+    }, {
+        headers: {
+            'accept': 'application/json',
+            'api-key': apiKey,
+            'content-type': 'application/json'
+        }
+    });
+};
 
 const registrationOtps = new Map();
 const securityOtps = new Map();
@@ -229,7 +228,7 @@ app.delete('/api/products/:id', authenticateToken, requireAdmin, async (req, res
     } catch (error) { res.status(500).json({ status: 'error', message: 'Could not delete product.' }); }
 });
 
-// --- FETCH PRODUCTS (UPDATED FOR CATEGORIES) ---
+// --- FETCH PRODUCTS ---
 app.get('/api/products', async (req, res) => {
     try {
         const { category, search } = req.query;
@@ -278,7 +277,6 @@ app.get('/api/products/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// --- CHECK IF USER HAS PURCHASED BEFORE REVIEWING ---
 app.get('/api/orders/check-purchase/:productId', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -337,6 +335,7 @@ app.post('/api/products/:id/reviews', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
+// 🔥 UPDATED PRODUCTION OTP ROUTES 🔥
 app.post('/api/send-register-otp', async (req, res) => {
     try {
         const { email, recaptchaToken } = req.body;
@@ -349,16 +348,17 @@ app.post('/api/send-register-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         registrationOtps.set(email, { otp, expires: Date.now() + 10 * 60000 });
         
-        await transporter.sendMail({ 
-            from: `"ER Parfums" <${process.env.EMAIL_USER}>`, 
-            to: email, 
-            subject: 'ER Parfums - Registration OTP', 
-            html: `<div style="text-align: center; padding: 20px;"><h2>ER PARFUMS</h2><p>Your one-time registration code is:</p><h1 style="letter-spacing: 5px;">${otp}</h1></div>` 
-        });
+        // Calls the new Brevo HTTP API
+        await sendProductionEmail(
+            email, 
+            'ER Parfums - Registration OTP', 
+            `<div style="text-align: center; padding: 20px; font-family: sans-serif;"><h2>ER PARFUMS</h2><p>Your one-time registration code is:</p><h1 style="letter-spacing: 5px;">${otp}</h1></div>`
+        );
+        
         res.json({ status: 'success', message: 'Registration OTP sent.' });
     } catch (error) { 
-        console.error("🔥 CRITICAL OTP ERROR:", error); 
-        res.status(500).json({ status: 'error', message: 'Failed to send email.' }); 
+        console.error("🔥 CRITICAL OTP ERROR:", error.response?.data || error.message); 
+        res.status(500).json({ status: 'error', message: 'Failed to send email. Check API key.' }); 
     }
 });
 
@@ -396,11 +396,22 @@ app.post('/api/forgot-password', async (req, res) => {
         if (!isHuman) return res.status(400).json({ status: 'error', message: 'Please complete the reCAPTCHA.' });
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return res.status(404).json({ message: 'If this email exists, an OTP was sent.' });
+        
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         await prisma.user.update({ where: { email }, data: { resetOtp: otp, resetOtpExpiry: new Date(Date.now() + 10 * 60000) } });
-        await transporter.sendMail({ from: `"ER Parfums" <${process.env.EMAIL_USER}>`, to: email, subject: 'ER Parfums - Password Reset', html: `<div style="text-align: center; padding: 20px;"><h2>ER PARFUMS</h2><p>Your password reset code is:</p><h1 style="letter-spacing: 5px;">${otp}</h1></div>` });
+        
+        // Calls the new Brevo HTTP API
+        await sendProductionEmail(
+            email, 
+            'ER Parfums - Password Reset', 
+            `<div style="text-align: center; padding: 20px; font-family: sans-serif;"><h2>ER PARFUMS</h2><p>Your password reset code is:</p><h1 style="letter-spacing: 5px;">${otp}</h1></div>`
+        );
+        
         res.json({ status: 'success', message: 'OTP sent to your email.' });
-    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed to send email.' }); }
+    } catch (error) { 
+        console.error("🔥 CRITICAL OTP ERROR:", error.response?.data || error.message);
+        res.status(500).json({ status: 'error', message: 'Failed to send email.' }); 
+    }
 });
 
 app.post('/api/reset-password', async (req, res) => {
@@ -690,6 +701,4 @@ app.post('/api/webhooks/paymongo', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-
-// 🔥 FIXED: Explicitly binding to '0.0.0.0' to pass Railway's network health checks!
 app.listen(PORT, '0.0.0.0', () => console.log(`Server is running on http://0.0.0.0:${PORT}`));
