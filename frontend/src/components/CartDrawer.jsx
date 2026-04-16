@@ -42,7 +42,10 @@ export default function CartDrawer({ isOpen, onClose, cart, updateQuantity, requ
                             ) : (
                                 cart.map(item => (
                                     <div key={item.id} className="flex gap-6">
-                                        <div className="w-24 h-32 bg-gray-50 shrink-0"><img src={item.image} className="w-full h-full object-cover grayscale" /></div>
+                                        {/* FIXED: Added support for both item.image and item.imageUrl */}
+                                        <div className="w-24 h-32 bg-gray-50 shrink-0">
+                                            <img src={item.image || item.imageUrl} className="w-full h-full object-cover grayscale" alt={item.name} />
+                                        </div>
                                         <div className="flex flex-col justify-between py-1 flex-1">
                                             <div>
                                                 <h3 className="text-xs font-bold uppercase tracking-widest">{item.name}</h3>
