@@ -46,17 +46,28 @@ function App() {
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  
+  // NEW: Scroll Listener State
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const token = localStorage.getItem('token');
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
+
+  // Track Scrolling for Morphing Navbar
+  useEffect(() => {
+      const handleScroll = () => {
+          setIsScrolled(window.scrollY > 30);
+      };
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     setIsNavHovered(false);
     setIsCartDrawerOpen(false); 
     setIsMobileMenuOpen(false); 
     setIsSearchOverlayOpen(false); 
-    // Scroll to top automatically when navigating to legal/contact pages
     window.scrollTo(0, 0);
   }, [location]);
 
@@ -98,13 +109,15 @@ function App() {
   const isAdmin = location.pathname.startsWith('/admin');
   const isProfile = location.pathname === '/profile';
 
-  const isSolid = !isHome || isNavHovered || isCartDrawerOpen || isMobileMenuOpen || isSearchOverlayOpen; 
-  const navPositionClass = isHome ? 'absolute top-0 left-0 w-full z-50' : 'relative w-full z-50';
-  const navBackgroundClass = isSolid ? 'bg-white border-b border-gray-100' : 'bg-transparent border-b border-transparent';
-  const textColor = isSolid ? 'text-black' : 'text-white';
-  const lineBgColor = isSolid ? 'bg-black' : 'bg-white';
+  // DYNAMIC MORPHING & ADAPTIVE STYLES
+  const isSolid = !isHome || isNavHovered || isCartDrawerOpen || isMobileMenuOpen || isSearchOverlayOpen || isScrolled; 
+  const navPositionClass = 'fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out';
+  const navBackgroundClass = isSolid ? 'bg-white/95 dark:bg-black/95 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-gray-800' : 'bg-transparent border-b border-transparent';
+  const textColor = isSolid ? 'text-black dark:text-white' : 'text-white';
+  const lineBgColor = isSolid ? 'bg-black dark:bg-white' : 'bg-white';
+  const paddingYClass = isSolid ? 'py-4' : 'py-8';
 
-  const Divider = () => <span className={`text-[10px] mx-4 font-light transition-colors duration-300 hidden md:inline ${isSolid ? 'text-gray-300' : 'text-white/40'}`}>|</span>;
+  const Divider = () => <span className={`text-[10px] mx-4 font-light transition-colors duration-300 hidden md:inline ${isSolid ? 'text-gray-300 dark:text-gray-700' : 'text-white/40'}`}>|</span>;
 
   const NavLink = ({ to, onClick, children, className="" }) => {
     const baseClass = `group relative inline-block ${textColor} uppercase font-bold text-[10px] tracking-[0.15em] transition-colors duration-300 cursor-pointer ${className}`;
@@ -116,7 +129,7 @@ function App() {
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-white relative flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-black dark:text-white relative flex flex-col overflow-x-hidden transition-colors duration-300">
       
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} />
       <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} cart={cart} setCart={setCart} updateQuantity={updateCartQuantity} requireAuth={requireAuth} />
@@ -129,7 +142,7 @@ function App() {
                   animate={{ opacity: 1, x: 0 }} 
                   exit={{ opacity: 0, x: '100%' }} 
                   transition={{ type: 'tween', duration: 0.3, ease: 'easeOut' }}
-                  className="fixed inset-0 z-[60] bg-black text-white p-10 flex flex-col"
+                  className="fixed inset-0 z-[60] bg-black dark:bg-gray-900 text-white p-10 flex flex-col"
               >
                   <div className="flex justify-end mb-12">
                       <button onClick={() => setIsMobileMenuOpen(false)} className="text-white hover:text-gray-400 transition-colors"><CloseIcon /></button>
@@ -159,8 +172,8 @@ function App() {
       </AnimatePresence>
 
       {!isAdmin && (
-          <nav className={`${navPositionClass} ${navBackgroundClass} flex flex-col transition-all duration-300 ease-out`} onMouseEnter={() => setIsNavHovered(true)} onMouseLeave={() => setIsNavHovered(false)}>
-            <div className="px-6 md:px-10 pt-6 pb-6 flex flex-col">
+          <nav className={`${navPositionClass} ${navBackgroundClass}`} onMouseEnter={() => setIsNavHovered(true)} onMouseLeave={() => setIsNavHovered(false)}>
+            <div className={`px-6 md:px-10 flex flex-col transition-all duration-500 ease-in-out ${paddingYClass}`}>
                 <div className="flex justify-between items-center w-full">
                     
                     <div className="w-1/3 flex items-center">
@@ -174,7 +187,8 @@ function App() {
 
                     <div className="w-1/3 flex justify-center">
                         <Link to="/" className="hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
-                            <img src="/logo.png" alt="ER Parfums Logo" className="h-12 md:h-16 lg:h-20 w-auto object-contain transition-transform duration-300 hover:scale-105" />
+                            {/* Logo smoothly shrinks when scrolling */}
+                            <img src="/logo.png" alt="ER Parfums Logo" className={`w-auto object-contain transition-all duration-500 hover:scale-105 ${isSolid ? 'h-8 md:h-10 lg:h-12' : 'h-12 md:h-16 lg:h-20'} dark:invert`} />
                         </Link>
                     </div>
 
@@ -193,7 +207,7 @@ function App() {
                 </div>
                 
                 {!isProfile && (
-                    <div className="hidden md:flex justify-center items-center space-x-16 mt-8 animate-fade-in">
+                    <div className={`hidden md:flex justify-center items-center space-x-16 transition-all duration-500 overflow-hidden ${isSolid ? 'opacity-0 h-0 mt-0 pointer-events-none' : 'opacity-100 h-auto mt-8'}`}>
                         <NavLink to="/collection">Highlights</NavLink>
                         <NavLink to="/collection/Women">Women</NavLink>
                         <NavLink to="/collection/Men">Men</NavLink>

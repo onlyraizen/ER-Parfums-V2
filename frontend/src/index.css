@@ -28,7 +28,21 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* --- SYSTEM ADAPTIVE DARK MODE BASE --- */
 body {
     background-color: #ffffff;
     color: #000000;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #0a0a0a;
+        color: #f5f5f5;
+    }
+    
+    /* Automatically adapt scrollbars for dark mode */
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
 }

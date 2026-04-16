@@ -26,6 +26,7 @@ model User {
   reviews        Review[]
   stockAlerts    StockAlert[]
   wishlist       Wishlist[]
+  phone          String?
 }
 
 model Address {

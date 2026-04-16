@@ -55,7 +55,7 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'er_parfums_super_secret_key_2026';
 
-// 🔥 PRODUCTION HTTP EMAIL API (Bypasses Railway Port Blocks) 🔥
+// 🔥 PRODUCTION HTTP EMAIL API 🔥
 const sendProductionEmail = async (toEmail, subject, htmlContent) => {
     const apiKey = process.env.BREVO_API_KEY;
     if (!apiKey) throw new Error("BREVO_API_KEY is missing from environment variables.");
@@ -335,7 +335,39 @@ app.post('/api/products/:id/reviews', authenticateToken, async (req, res) => {
     } catch (error) { res.status(500).json({ status: 'error', message: error.message }); }
 });
 
-// 🔥 UPDATED PRODUCTION OTP ROUTES 🔥
+// --- NEW CONTACT US ROUTE ---
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
+        
+        if (!name || !email || !message) {
+            return res.status(400).json({ status: 'error', message: 'All fields are required.' });
+        }
+
+        const emailHtml = `
+            <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #eee;">
+                <h2 style="text-align: center; text-transform: uppercase; letter-spacing: 2px;">New Inquiry</h2>
+                <p><strong>From:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="white-space: pre-wrap; line-height: 1.6;">${message}</p>
+            </div>
+        `;
+
+        await sendProductionEmail(
+            process.env.EMAIL_USER, 
+            `ER Parfums Inquiry: ${name}`, 
+            emailHtml
+        );
+        
+        res.json({ status: 'success', message: 'Message sent successfully.' });
+    } catch (error) {
+        console.error("🔥 Contact Form Error:", error.response?.data || error.message);
+        res.status(500).json({ status: 'error', message: 'Failed to send message.' });
+    }
+});
+
+// --- OTP ROUTES ---
 app.post('/api/send-register-otp', async (req, res) => {
     try {
         const { email, recaptchaToken } = req.body;
@@ -348,7 +380,6 @@ app.post('/api/send-register-otp', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         registrationOtps.set(email, { otp, expires: Date.now() + 10 * 60000 });
         
-        // Calls the new Brevo HTTP API
         await sendProductionEmail(
             email, 
             'ER Parfums - Registration OTP', 
@@ -400,7 +431,6 @@ app.post('/api/forgot-password', async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         await prisma.user.update({ where: { email }, data: { resetOtp: otp, resetOtpExpiry: new Date(Date.now() + 10 * 60000) } });
         
-        // Calls the new Brevo HTTP API
         await sendProductionEmail(
             email, 
             'ER Parfums - Password Reset', 
