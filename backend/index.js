@@ -13,8 +13,7 @@ const rateLimit = require('express-rate-limit');
 const dns = require('dns');
 
 // 🔥 GLOBAL IPv4 OVERRIDE 🔥
-// This forces Node to use stable IPv4 routes for EVERYTHING.
-// It prevents infinite hangs when talking to Google reCAPTCHA or Gmail from Railway.
+// Forces Node to use stable IPv4 routes for EVERYTHING.
 dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
@@ -58,6 +57,7 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'er_parfums_super_secret_key_2026';
 
+// FIXED: Added extreme strict timeouts to prevent infinite hanging
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -69,13 +69,15 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    family: 4 
+    family: 4,
+    connectionTimeout: 10000, // Fails fast if blocked
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 const registrationOtps = new Map();
 const securityOtps = new Map();
 
-// FIXED: Upgraded to Axios with a 10-second timeout to prevent infinite hanging
 const verifyRecaptcha = async (token) => {
     if (!token) return false;
     try {
@@ -688,4 +690,6 @@ app.post('/api/webhooks/paymongo', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server is running on http://localhost:${PORT}`));
+
+// 🔥 FIXED: Explicitly binding to '0.0.0.0' to pass Railway's network health checks!
+app.listen(PORT, '0.0.0.0', () => console.log(`Server is running on http://0.0.0.0:${PORT}`));
