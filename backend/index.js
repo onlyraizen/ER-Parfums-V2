@@ -10,6 +10,12 @@ const fs = require('fs');
 const axios = require('axios');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const dns = require('dns');
+
+// 🔥 GLOBAL IPv4 OVERRIDE 🔥
+// This forces Node to use stable IPv4 routes for EVERYTHING.
+// It prevents infinite hangs when talking to Google reCAPTCHA or Gmail from Railway.
+dns.setDefaultResultOrder('ipv4first');
 
 require('dotenv').config();
 
@@ -52,7 +58,6 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'er_parfums_super_secret_key_2026';
 
-// FIXED: Added 'family: 4' to force standard IPv4 routing
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -64,20 +69,23 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    family: 4 // Force Node to use IPv4 instead of IPv6 for DNS resolution
+    family: 4 
 });
 
 const registrationOtps = new Map();
 const securityOtps = new Map();
 
+// FIXED: Upgraded to Axios with a 10-second timeout to prevent infinite hanging
 const verifyRecaptcha = async (token) => {
     if (!token) return false;
     try {
         const secretKey = process.env.RECAPTCHA_SECRET_KEY || '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
-        const response = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`, { method: 'POST' });
-        const data = await response.json(); 
-        return data.success;
-    } catch (error) { return false; }
+        const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`, null, { timeout: 10000 });
+        return response.data.success;
+    } catch (error) { 
+        console.error("🔥 reCAPTCHA Error:", error.message);
+        return false; 
+    }
 };
 
 const authenticateToken = (req, res, next) => {
