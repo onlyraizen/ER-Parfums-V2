@@ -52,11 +52,17 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'er_parfums_super_secret_key_2026';
 
+// FIXED: Explicit host/port for IPv4 routing and corrected TLS syntax
 const transporter = nodemailer.createTransport({
-    service: 'gmail', 
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: { 
         user: process.env.EMAIL_USER, 
         pass: process.env.EMAIL_PASS 
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
 
