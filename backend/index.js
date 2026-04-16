@@ -52,7 +52,7 @@ const upload = multer({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'er_parfums_super_secret_key_2026';
 
-// FIXED: Explicit host/port for IPv4 routing and corrected TLS syntax
+// FIXED: Added 'family: 4' to force standard IPv4 routing
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -63,7 +63,8 @@ const transporter = nodemailer.createTransport({
     },
     tls: {
         rejectUnauthorized: false
-    }
+    },
+    family: 4 // Force Node to use IPv4 instead of IPv6 for DNS resolution
 });
 
 const registrationOtps = new Map();
