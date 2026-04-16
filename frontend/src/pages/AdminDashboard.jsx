@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
-// FIXED: Pointing to the actual supabase.js file in your api folder
 import { supabase } from '../api/supabase'; 
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -293,7 +292,6 @@ export default function AdminDashboard() {
                                     <div><label className="text-[9px] uppercase tracking-widest text-gray-400 font-bold block mb-2">Scent Family</label><input type="text" name="scentFamily" value={newProduct.scentFamily} onChange={handleProductChange} className="w-full border-b border-gray-300 py-2 outline-none text-sm focus:border-black transition" /></div>
                                 </div>
                                 
-                                {/* NEW IMAGE FIELDS */}
                                 <div className="grid grid-cols-2 gap-8 border border-gray-100 p-6 bg-gray-50">
                                     <div>
                                         <label className="text-[9px] uppercase tracking-widest text-gray-400 font-bold block mb-2">Upload Cover Image (Primary)</label>
@@ -357,6 +355,7 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
+                {/* --- UPDATED RETURNS TAB WITH REASON DISPLAY --- */}
                 {activeTab === 'returns' && (
                     <div>
                         <header className="mb-12 flex justify-between items-end"><div><h2 className="text-[10px] uppercase tracking-[0.5em] text-gray-400 font-bold mb-3">Customer Service</h2><h1 className="text-4xl font-bold tracking-tight text-black uppercase italic">Returns & Refunds Queue</h1></div></header>
@@ -366,15 +365,26 @@ export default function AdminDashboard() {
                                 <input type="text" placeholder="Search by Order ID or Customer Name..." value={returnsSearch} onChange={(e) => setReturnsSearch(e.target.value)} className="ml-4 flex-1 outline-none text-sm font-bold tracking-widest placeholder:text-gray-300 uppercase" />
                             </div>
                             <table className="w-full text-left border-collapse">
-                                <thead><tr className="bg-gray-50 text-[9px] uppercase tracking-widest text-gray-500 border-b border-gray-200"><th className="p-6 font-semibold">Order ID</th><th className="p-6 font-semibold">Customer Details</th><th className="p-6 font-semibold">Amount to Refund</th><th className="p-6 font-semibold text-right">Current Status</th></tr></thead>
-                                <tbody className="text-xs">{filteredReturns.length === 0 ? ( <tr><td colSpan="4" className="p-10 text-center text-gray-400 text-[10px] uppercase tracking-widest font-bold">No active returns found.</td></tr> ) : (filteredReturns.map(order => (<tr key={`ret-${order.id}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors"><td className="p-6 font-bold tracking-widest">{order.order_number || `ORD-${order.id}`}</td><td className="p-6"><div className="font-bold text-gray-900 uppercase">{order.user?.fullname || 'Guest'}</div><div className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{order.user?.email}</div></td><td className="p-6 font-bold">₱{order.total_amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td><td className="p-6 text-right"><select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="px-4 py-2 rounded-sm font-bold uppercase tracking-widest text-[9px] cursor-pointer outline-none border-none shadow-sm" style={{ backgroundColor: getStatusColor(order.status), color: '#fff' }}><option value="Return/Refund" className="bg-white text-black">RETURN/REFUND</option><option value="Cancelled" className="bg-white text-black">CANCELLED</option><option value="Completed" className="bg-white text-black">COMPLETED (RESOLVED)</option></select></td></tr>)))}</tbody>
+                                <thead><tr className="bg-gray-50 text-[9px] uppercase tracking-widest text-gray-500 border-b border-gray-200"><th className="p-6 font-semibold">Order ID</th><th className="p-6 font-semibold">Customer Details</th><th className="p-6 font-semibold">Return Reason</th><th className="p-6 font-semibold text-right">Current Status</th></tr></thead>
+                                <tbody className="text-xs">{filteredReturns.length === 0 ? ( <tr><td colSpan="4" className="p-10 text-center text-gray-400 text-[10px] uppercase tracking-widest font-bold">No active returns found.</td></tr> ) : (filteredReturns.map(order => (
+                                    <tr key={`ret-${order.id}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                        <td className="p-6 font-bold tracking-widest">{order.order_number || `ORD-${order.id}`}</td>
+                                        <td className="p-6"><div className="font-bold text-gray-900 uppercase">{order.user?.fullname || 'Guest'}</div><div className="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{order.user?.email}</div></td>
+                                        <td className="p-6">
+                                            {/* NEW: Displays the reason the customer typed in! */}
+                                            <div className="font-bold text-black uppercase tracking-widest mb-1">{order.returnReason || 'No Reason Provided'}</div>
+                                            <div className="text-gray-500 leading-relaxed italic">"{order.returnDetails || 'No additional details provided by customer.'}"</div>
+                                        </td>
+                                        <td className="p-6 text-right"><select value={order.status} onChange={(e) => handleStatusChange(order.id, e.target.value)} className="px-4 py-2 rounded-sm font-bold uppercase tracking-widest text-[9px] cursor-pointer outline-none border-none shadow-sm" style={{ backgroundColor: getStatusColor(order.status), color: '#fff' }}><option value="Return/Refund" className="bg-white text-black">RETURN/REFUND</option><option value="Cancelled" className="bg-white text-black">CANCELLED</option><option value="Completed" className="bg-white text-black">COMPLETED (RESOLVED)</option></select></td>
+                                    </tr>
+                                )))}</tbody>
                             </table>
                         </div>
                     </div>
                 )}
             </main>
 
-            {/* --- EDIT MODAL (Full Screen Overlay) --- */}
+            {/* --- EDIT MODAL --- */}
             {editingProduct && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60">
                     <div className="bg-white p-10 md:p-14 w-full max-w-4xl relative shadow-2xl h-[90vh] overflow-y-auto">

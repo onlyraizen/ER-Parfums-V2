@@ -67,6 +67,9 @@ export default function Cart({ cart, setCart }) {
             if (selectedPaymentMethod === 'GCash') {
                 const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/checkout/paymongo`, orderPayload, config);
                 if (res.data && res.data.checkoutUrl) {
+                    // FIXED: Clear the cart before leaving the site for PayMongo!
+                    setCart([]);
+                    localStorage.removeItem('er_cart'); 
                     window.location.href = res.data.checkoutUrl; 
                 } else {
                     alert("Failed to generate payment link. Please try again.");

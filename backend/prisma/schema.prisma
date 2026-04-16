@@ -92,6 +92,8 @@ model Order {
   user              User                 @relation(fields: [userId], references: [id])
   items             OrderItem[]
   statusHistory     OrderStatusHistory[]
+  returnReason      String?
+  returnDetails     String?
 }
 
 model OrderItem {

@@ -632,7 +632,11 @@ app.post('/api/orders/:orderNumber/return', authenticateToken, async (req, res) 
 
         await prisma.order.update({
             where: { id: order.id },
-            data: { status: 'Return/Refund' }
+            data: { 
+                status: 'Return/Refund',
+                returnReason: reason,    // Saves the dropdown reason
+                returnDetails: details   // Saves the typed explanation
+            }
         });
 
         res.json({ status: 'success', message: 'Return request submitted successfully.' });
